@@ -1,0 +1,9 @@
+@page "/not-found"
+@inject IStringLocalizer<AppStrings> L
+
+<PageTitle>@L["NotFound"] | Kubernetes Visualizer</PageTitle>
+<MudStack Spacing="2">
+    <MudText Typo="Typo.h4">@L["NotFound"]</MudText>
+    <MudText Color="Color.Secondary">@L["NotFoundDescription"]</MudText>
+    <MudButton Href="/" Variant="Variant.Filled" Color="Color.Primary" Class="align-self-start">@L["BackToHome"]</MudButton>
+</MudStack>

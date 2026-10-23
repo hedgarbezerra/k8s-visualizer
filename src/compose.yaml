@@ -1,0 +1,19 @@
+services:
+  kubernetes-visualizer:
+    build: .
+    image: kubernetesvisualizer:local
+    ports:
+      - "127.0.0.1:5080:8080"
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      KUBECONFIG: /run/kubeconfig/config
+      ConnectionProfiles__DatabasePath: /app/App_Data/kubernetes-visualizer.db
+    volumes:
+      - visualizer-data:/app/App_Data
+      - type: bind
+        source: ${KUBECONFIG_HOST_PATH:?Set KUBECONFIG_HOST_PATH in .env}
+        target: /run/kubeconfig/config
+        read_only: true
+
+volumes:
+  visualizer-data:

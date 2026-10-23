@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="Overview" xml:space="preserve"><value>Overview</value></data>
+  <data name="Resources" xml:space="preserve"><value>Resources</value></data>
+  <data name="WikiSupport" xml:space="preserve"><value>Wiki &amp; Support</value></data>
+  <data name="Settings" xml:space="preserve"><value>Settings</value></data>
+  <data name="OpenCloseNavigation" xml:space="preserve"><value>Open or close navigation</value></data>
+  <data name="ThemeLight" xml:space="preserve"><value>Switch to light theme</value></data>
+  <data name="ThemeDark" xml:space="preserve"><value>Switch to dark theme</value></data>
+  <data name="Language" xml:space="preserve"><value>Language</value></data>
+  <data name="Portuguese" xml:space="preserve"><value>Brazilian Portuguese</value></data>
+  <data name="English" xml:space="preserve"><value>English</value></data>
+  <data name="OverviewDescription" xml:space="preserve"><value>Monitor your Kubernetes resources in one place.</value></data>
+  <data name="NoClusterConnected" xml:space="preserve"><value>No cluster connected. Select a context in Settings to get started.</value></data>
+  <data name="Cluster" xml:space="preserve"><value>Cluster</value></data>
+  <data name="Disconnected" xml:space="preserve"><value>Disconnected</value></data>
+  <data name="NoContextSelected" xml:space="preserve"><value>No context selected</value></data>
+  <data name="Namespace" xml:space="preserve"><value>Namespace</value></data>
+  <data name="WaitingForConnection" xml:space="preserve"><value>Waiting for connection</value></data>
+  <data name="WaitingForDiscovery" xml:space="preserve"><value>Waiting for discovery</value></data>
+  <data name="Pods" xml:space="preserve"><value>Pods</value></data>
+  <data name="GetStarted" xml:space="preserve"><value>Get started</value></data>
+  <data name="GetStartedDescription" xml:space="preserve"><value>Configure a Kubernetes connection to explore cluster resources, including Pods, on the Resources page. Changes are confirmed before they are sent to the cluster.</value></data>
+  <data name="ConfigureConnection" xml:space="preserve"><value>Configure connection</value></data>
+  <data name="ResourcesDescription" xml:space="preserve"><value>Browse the resource types advertised by the cluster and inspect objects in the selected namespace.</value></data>
+  <data name="ConnectFromSettings" xml:space="preserve"><value>Configure and connect a profile in Settings. Then select a cluster and namespace at the bottom of the navigation sidebar.</value></data>
+  <data name="ResourceType" xml:space="preserve"><value>Resource type</value></data>
+  <data name="AllResources" xml:space="preserve"><value>All resources</value></data>
+  <data name="FilterNameNamespace" xml:space="preserve"><value>Filter name/namespace</value></data>
+  <data name="Refresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="ObjectCount" xml:space="preserve"><value>{0} objects</value></data>
+  <data name="Kind" xml:space="preserve"><value>Kind</value></data>
+  <data name="Name" xml:space="preserve"><value>Name</value></data>
+  <data name="Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Api" xml:space="preserve"><value>API</value></data>
+  <data name="NoObjectsForFilter" xml:space="preserve"><value>No objects found for this type and filter.</value></data>
+  <data name="SecretsMetadataOnly" xml:space="preserve"><value>This table shows Secret metadata only. Secret values are never loaded in this list.</value></data>
+  <data name="SomeResourceTypesUnavailable" xml:space="preserve"><value>Could not list {0} resource types. Other results are available; hover over the icon to see the affected types.</value></data>
+  <data name="CouldNotListAllResources" xml:space="preserve"><value>Could not list resources</value></data>
+  <data name="CouldNotLoadDiscovery" xml:space="preserve"><value>Could not load Kubernetes API discovery</value></data>
+  <data name="CouldNotListResource" xml:space="preserve"><value>Could not list {0}</value></data>
+  <data name="WikiDescription" xml:space="preserve"><value>Fundamentals for understanding the objects shown in the visualizer.</value></data>
+  <data name="PodDescription" xml:space="preserve"><value>A Pod is the smallest deployable unit in Kubernetes. It groups one or more containers that share networking and volumes.</value></data>
+  <data name="DeploymentDescription" xml:space="preserve"><value>A Deployment describes the desired number and version of Pods and coordinates updates and replacements.</value></data>
+  <data name="ServiceDescription" xml:space="preserve"><value>A Service provides a stable address for reaching a set of Pods selected by labels.</value></data>
+  <data name="ConfigMapDescription" xml:space="preserve"><value>A ConfigMap stores non-sensitive configuration data that can be mounted as files or environment variables.</value></data>
+  <data name="NotFound" xml:space="preserve"><value>Page not found</value></data>
+  <data name="NotFoundDescription" xml:space="preserve"><value>The requested address does not match a page in this application.</value></data>
+  <data name="BackToHome" xml:space="preserve"><value>Back to home</value></data>
+  <data name="ConnectedCluster" xml:space="preserve"><value>Connected cluster</value></data>
+  <data name="AllNamespaces" xml:space="preserve"><value>All</value></data>
+  <data name="ConfigureAndConnectSettings" xml:space="preserve"><value>Configure and connect in Settings.</value></data>
+  <data name="SettingsDescription" xml:space="preserve"><value>Manage Kubernetes connections and connect the clusters used by the visualizer.</value></data>
+  <data name="AddConnection" xml:space="preserve"><value>Add connection</value></data>
+  <data name="ConnectionStorageDescription" xml:space="preserve"><value>Add as many connections as you need. Profiles are stored in SQLite; only the name, kubeconfig path, and context are saved. Credentials remain in the Kubernetes file.</value></data>
+  <data name="LocalDatabase" xml:space="preserve"><value>Local database: {0}</value></data>
+  <data name="ConnectionName" xml:space="preserve"><value>Connection name</value></data>
+  <data name="KubeconfigPath" xml:space="preserve"><value>Kubeconfig path</value></data>
+  <data name="LoadContexts" xml:space="preserve"><value>Load contexts</value></data>
+  <data name="Context" xml:space="preserve"><value>Context</value></data>
+  <data name="SaveConnection" xml:space="preserve"><value>Save connection</value></data>
+  <data name="ConfiguredConnections" xml:space="preserve"><value>Configured connections ({0})</value></data>
+  <data name="NoConnectionsYet" xml:space="preserve"><value>No connections have been added yet.</value></data>
+  <data name="Connected" xml:space="preserve"><value>Connected</value></data>
+  <data name="Disconnect" xml:space="preserve"><value>Disconnect</value></data>
+  <data name="Connect" xml:space="preserve"><value>Connect</value></data>
+  <data name="RemoveConnection" xml:space="preserve"><value>Remove connection</value></data>
+  <data name="RbacWarning" xml:space="preserve"><value>Access is determined by the cluster's RBAC. This tool can modify and delete resources; write operations require confirmation.</value></data>
+  <data name="ContextLabel" xml:space="preserve"><value>Context: {0}</value></data>
+  <data name="WikiPod" xml:space="preserve"><value>A Pod is the smallest deployable unit in Kubernetes. It groups one or more containers that share networking and volumes.</value></data>
+  <data name="WikiDeployment" xml:space="preserve"><value>A Deployment describes the desired number and version of Pods and coordinates updates and replacements.</value></data>
+  <data name="WikiService" xml:space="preserve"><value>A Service provides a stable address for reaching a set of Pods selected by labels.</value></data>
+  <data name="WikiConfigMap" xml:space="preserve"><value>A ConfigMap stores non-sensitive configuration data that can be mounted as files or environment variables.</value></data>
+  <data name="ErrorTitle" xml:space="preserve"><value>Error.</value></data>
+  <data name="ErrorDescription" xml:space="preserve"><value>An error occurred while processing your request.</value></data>
+  <data name="RequestId" xml:space="preserve"><value>Request ID:</value></data>
+  <data name="DevelopmentMode" xml:space="preserve"><value>Development mode</value></data>
+  <data name="DevelopmentModeDescription" xml:space="preserve"><value>Enabling the Development environment displays error details. Do not use it for deployed applications because it may reveal sensitive information. For local debugging, set ASPNETCORE_ENVIRONMENT to Development and restart the application.</value></data>
+  <data name="ReconnectAttempt" xml:space="preserve"><value>Rejoining the server...</value></data>
+  <data name="ReconnectRetryingPrefix" xml:space="preserve"><value>Rejoin failed... trying again in</value></data>
+  <data name="Seconds" xml:space="preserve"><value>seconds.</value></data>
+  <data name="ReconnectRetrying" xml:space="preserve"><value>Rejoin failed... trying again in {0} seconds.</value></data>
+  <data name="ReconnectFailed" xml:space="preserve"><value>Failed to rejoin. Please retry or reload the page.</value></data>
+  <data name="Retry" xml:space="preserve"><value>Retry</value></data>
+  <data name="SessionPaused" xml:space="preserve"><value>The session has been paused by the server.</value></data>
+  <data name="ResumeFailed" xml:space="preserve"><value>Failed to resume the session. Please retry or reload the page.</value></data>
+  <data name="Resume" xml:space="preserve"><value>Resume</value></data>
+  <data name="CouldNotLoadKubeconfig" xml:space="preserve"><value>Could not load kubeconfig: {0}</value></data>
+  <data name="MissingConfiguredConnection" xml:space="preserve"><value>The selected connection is not configured.</value></data>
+  <data name="ContextNotFound" xml:space="preserve"><value>Context '{0}' does not exist in the configured file.</value></data>
+  <data name="ConnectedWithoutNamespacePermission" xml:space="preserve"><value>Connected, but this context's RBAC does not allow listing namespaces. The default namespace was kept if configured.</value></data>
+  <data name="ConnectionFailed" xml:space="preserve"><value>Connection failed: {0}</value></data>
+  <data name="ConnectInSettings" xml:space="preserve"><value>Connect to a cluster in Settings.</value></data>
+  <data name="ResourceTree" xml:space="preserve"><value>Resource tree</value></data>
+  <data name="ResourceTreeDescription" xml:space="preserve"><value>Explore ownership hierarchy and networking, scaling, scheduling, and reference relationships between Kubernetes resources.</value></data>
+  <data name="ChooseNamespaceForTree" xml:space="preserve"><value>Select a namespace</value></data>
+  <data name="ChooseNamespaceForTreeDescription" xml:space="preserve"><value>The tree loads one namespace at a time to keep navigation responsive. Choose one in the sidebar or below.</value></data>
+  <data name="NoNamespacesAvailable" xml:space="preserve"><value>No namespaces are available. Check the connection and RBAC permissions.</value></data>
+  <data name="GraphObjectCount" xml:space="preserve"><value>{0} resources loaded</value></data>
+  <data name="OpenResourceList" xml:space="preserve"><value>Open resource list</value></data>
+  <data name="TreePartialFailures" xml:space="preserve"><value>Could not list {0} resource types; the others remain available.</value></data>
+  <data name="CouldNotLoadResourceTree" xml:space="preserve"><value>Could not load the resource tree</value></data>
+  <data name="NoResourcesInNamespace" xml:space="preserve"><value>No listable resources were found in this namespace.</value></data>
+  <data name="Labels" xml:space="preserve"><value>Labels</value></data>
+  <data name="Annotations" xml:space="preserve"><value>Annotations</value></data>
+  <data name="Collapse" xml:space="preserve"><value>Collapse branch</value></data>
+  <data name="Expand" xml:space="preserve"><value>Expand branch</value></data>
+  <data name="ContextRelationLegend" xml:space="preserve"><value>Cluster and namespace scope</value></data>
+  <data name="OwnerRelationLegend" xml:space="preserve"><value>Ownership through ownerReferences</value></data>
+  <data name="ServiceRelationLegend" xml:space="preserve"><value>Service selects Pods by labels</value></data>
+  <data name="PolicySelectorRelationLegend" xml:space="preserve"><value>Policy selects Pods</value></data>
+  <data name="ControlRelationLegend" xml:space="preserve"><value>Controller scales or changes its target</value></data>
+  <data name="SchedulingRelationLegend" xml:space="preserve"><value>Scheduled onto a Node</value></data>
+  <data name="ReferenceRelationLegend" xml:space="preserve"><value>Declared reference or dependency</value></data>
+  <data name="CompositionRelationLegend" xml:space="preserve"><value>Pod composition</value></data>
+  <data name="FunctionalGroup" xml:space="preserve"><value>Functional group</value></data>
+  <data name="AllResourceGroups" xml:space="preserve"><value>All groups</value></data>
+  <data name="GraphGroupInfrastructure" xml:space="preserve"><value>Infrastructure</value></data>
+  <data name="GraphGroupOrganization" xml:space="preserve"><value>Organization</value></data>
+  <data name="GraphGroupWorkloads" xml:space="preserve"><value>Workloads</value></data>
+  <data name="GraphGroupProcessing" xml:space="preserve"><value>Processing</value></data>
+  <data name="GraphGroupScaling" xml:space="preserve"><value>Scaling</value></data>
+  <data name="GraphGroupNetworking" xml:space="preserve"><value>Networking and exposure</value></data>
+  <data name="GraphGroupStorage" xml:space="preserve"><value>Storage</value></data>
+  <data name="GraphGroupConfiguration" xml:space="preserve"><value>Configuration</value></data>
+  <data name="GraphGroupSecurity" xml:space="preserve"><value>Security and access</value></data>
+  <data name="GraphGroupPolicies" xml:space="preserve"><value>Policies and scheduling</value></data>
+  <data name="GraphGroupExtensibility" xml:space="preserve"><value>Extensibility</value></data>
+  <data name="GraphGroupOperations" xml:space="preserve"><value>Operations and observability</value></data>
+  <data name="Close" xml:space="preserve"><value>Close</value></data>
+  <data name="ClusterScope" xml:space="preserve"><value>Cluster scope</value></data>
+  <data name="RelatedResources" xml:space="preserve"><value>Related resources</value></data>
+  <data name="NoRelatedResources" xml:space="preserve"><value>No related resources are visible</value></data>
+  <data name="ResourceKindsFilter" xml:space="preserve"><value>Visible resource types</value></data>
+  <data name="HideKubernetesSystemResources" xml:space="preserve"><value>Hide Kubernetes system resources</value></data>
+  <data name="HideControllerManagedResources" xml:space="preserve"><value>Hide resources controlled by other resources</value></data>
+  <data name="ViewAsYaml" xml:space="preserve"><value>View observed YAML</value></data>
+  <data name="ShowDetails" xml:space="preserve"><value>Back to details</value></data>
+  <data name="CouldNotLoadYaml" xml:space="preserve"><value>Could not load YAML</value></data>
+  <data name="HideStandaloneResources" xml:space="preserve"><value>Hide resources without a controlling owner</value></data>
+  <data name="ResourceOriginFilterNote" xml:space="preserve"><value>Origin is estimated from system namespaces, managedFields, and ownerReferences; Kubernetes has no universal marker for “user” versus “system” resources.</value></data>
+  <data name="SecretYamlRedacted" xml:space="preserve"><value>For safety, YAML shows Secret metadata only; data and stringData are not loaded.</value></data>
+  <data name="ClearSelection" xml:space="preserve"><value>Clear selection</value></data>
+  <data name="Fullscreen" xml:space="preserve"><value>Full screen</value></data>
+  <data name="ExitFullscreen" xml:space="preserve"><value>Exit full screen</value></data>
+  <data name="HierarchyLevel" xml:space="preserve"><value>Level {0}</value></data>
+  <data name="ObservedYaml" xml:space="preserve"><value>Observed YAML</value></data>
+  <data name="CopyYaml" xml:space="preserve"><value>Copy YAML</value></data>
+  <data name="YamlCopied" xml:space="preserve"><value>YAML copied</value></data>
+  <data name="ClipboardUnavailable" xml:space="preserve"><value>Clipboard access is unavailable in this browser or context.</value></data>
+</root>

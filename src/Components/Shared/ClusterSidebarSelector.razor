@@ -1,0 +1,54 @@
+@implements IDisposable
+@inject KubernetesClusterService ClusterService
+@inject IStringLocalizer<AppStrings> L
+
+<MudDivider Class="mb-3" />
+<MudText Typo="Typo.overline" Color="Color.Secondary">@L["ConnectedCluster"]</MudText>
+<MudSelect T="string" Label="@L["Cluster"]" Value="@(ClusterService.ActiveConnectionId ?? string.Empty)"
+           ValueChanged="OnConnectionChanged" Variant="Variant.Outlined" Dense="true"
+           Disabled="ClusterService.ConnectedProfiles.Count == 0">
+    @foreach (var profile in ClusterService.ConnectedProfiles)
+    {
+        <MudSelectItem Value="@profile.Id">@profile.Name</MudSelectItem>
+    }
+</MudSelect>
+<MudSelect T="string" Label="@L["Namespace"]" Class="mt-2" Value="@(ClusterService.CurrentNamespace ?? string.Empty)"
+           ValueChanged="OnNamespaceChanged" Variant="Variant.Outlined" Dense="true"
+           Disabled="!ClusterService.IsConnected || ClusterService.Namespaces.Count == 0">
+    <MudSelectItem Value="@string.Empty">@L["AllNamespaces"]</MudSelectItem>
+    @foreach (var ns in ClusterService.Namespaces)
+    {
+        <MudSelectItem Value="@ns">@ns</MudSelectItem>
+    }
+</MudSelect>
+@if (!ClusterService.IsConnected)
+{
+    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-2">@L["ConfigureAndConnectSettings"]</MudText>
+}
+else
+{
+    <MudTooltip Text="@ClusterService.Server">
+        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-2 text-truncate">@ClusterService.Server</MudText>
+    </MudTooltip>
+}
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        ClusterService.Changed += OnServiceChanged;
+        await ClusterService.EnsureProfilesLoadedAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+            await ClusterService.RestoreLastSelectionAsync();
+    }
+
+    private Task OnConnectionChanged(string? profileId) => ClusterService.SelectConnectionAsync(profileId);
+
+    private Task OnNamespaceChanged(string? namespaceName) => ClusterService.SelectNamespaceAsync(namespaceName);
+
+    private void OnServiceChanged() => _ = InvokeAsync(StateHasChanged);
+    public void Dispose() => ClusterService.Changed -= OnServiceChanged;
+}

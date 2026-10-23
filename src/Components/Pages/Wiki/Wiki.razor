@@ -1,0 +1,28 @@
+@page "/wiki"
+@inject IStringLocalizer<AppStrings> L
+
+<PageTitle>@L["WikiSupport"] | Kubernetes Visualizer</PageTitle>
+
+<MudStack Spacing="4">
+    <div>
+        <MudText Typo="Typo.h4" GutterBottom="true">@L["WikiSupport"]</MudText>
+        <MudText Typo="Typo.body1" Color="Color.Secondary">@L["WikiDescription"]</MudText>
+    </div>
+
+    <MudPaper Class="pa-4" Elevation="1">
+        <div id="pod"><MudText Typo="Typo.h6" GutterBottom="true">Pod</MudText></div>
+        <MudText>@L["WikiPod"]</MudText>
+    </MudPaper>
+    <MudPaper Class="pa-4" Elevation="1">
+        <div id="deployment"><MudText Typo="Typo.h6" GutterBottom="true">Deployment</MudText></div>
+        <MudText>@L["WikiDeployment"]</MudText>
+    </MudPaper>
+    <MudPaper Class="pa-4" Elevation="1">
+        <div id="service"><MudText Typo="Typo.h6" GutterBottom="true">Service</MudText></div>
+        <MudText>@L["WikiService"]</MudText>
+    </MudPaper>
+    <MudPaper Class="pa-4" Elevation="1">
+        <div id="configmap"><MudText Typo="Typo.h6" GutterBottom="true">ConfigMap</MudText></div>
+        <MudText>@L["WikiConfigMap"]</MudText>
+    </MudPaper>
+</MudStack>

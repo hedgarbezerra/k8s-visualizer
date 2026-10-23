@@ -1,0 +1,1118 @@
+@page "/"
+@implements IAsyncDisposable
+@inject KubernetesClusterService ClusterService
+@inject IStringLocalizer<AppStrings> L
+@inject IJSRuntime JS
+
+<PageTitle>@L["Overview"] | Kubernetes Visualizer</PageTitle>
+
+<MudStack Spacing="4">
+    <div>
+        <MudText Typo="Typo.h4" GutterBottom="true">@L["ResourceTree"]</MudText>
+        <MudText Typo="Typo.body1" Color="Color.Secondary">@L["ResourceTreeDescription"]</MudText>
+    </div>
+
+    @if (!ClusterService.IsConnected)
+    {
+        <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">@L["NoClusterConnected"]</MudAlert>
+        <MudButton Href="/settings" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Settings">@L["ConfigureConnection"]</MudButton>
+    }
+    else if (string.IsNullOrWhiteSpace(ClusterService.CurrentNamespace))
+    {
+        <MudPaper Class="pa-4" Elevation="1">
+            <MudText Typo="Typo.h6" GutterBottom="true">@L["ChooseNamespaceForTree"]</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">@L["ChooseNamespaceForTreeDescription"]</MudText>
+            @if (ClusterService.Namespaces.Count == 0)
+            {
+                <MudAlert Severity="Severity.Warning" Dense="true">@L["NoNamespacesAvailable"]</MudAlert>
+            }
+            else
+            {
+                <MudStack Row="true" Spacing="2" Wrap="Wrap.Wrap">
+                    @foreach (var namespaceName in ClusterService.Namespaces)
+                    {
+                        <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="() => SelectNamespaceAsync(namespaceName)">@namespaceName</MudButton>
+                    }
+                </MudStack>
+            }
+        </MudPaper>
+    }
+    else
+    {
+        <MudPaper Class="pa-4" Elevation="1">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Wrap="Wrap.Wrap" Spacing="2">
+                <div>
+                    <MudText Typo="Typo.overline" Color="Color.Secondary">@ClusterService.CurrentConnectionName · @ClusterService.CurrentContextName</MudText>
+                    <MudText Typo="Typo.h6">@L["Namespace"]: @ClusterService.CurrentNamespace</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["GraphObjectCount", Math.Max(0, _graphNodes.Count - 2)]</MudText>
+                </div>
+                <MudStack Row="true" Spacing="2">
+                    <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Refresh" OnClick="LoadTreeAsync" Disabled="_loading">@L["Refresh"]</MudButton>
+                    <MudButton Href="/resources" Variant="Variant.Text" StartIcon="@Icons.Material.Filled.TableRows">@L["OpenResourceList"]</MudButton>
+                </MudStack>
+            </MudStack>
+            <MudSelect T="string" Label="@L["FunctionalGroup"]" Value="@_selectedFunctionalGroup" ValueChanged="SetFunctionalGroupAsync" Dense="true" Variant="Variant.Outlined" Class="mt-3" Style="max-width: 360px">
+                @foreach (var group in FunctionalGroups)
+                {
+                    <MudSelectItem T="string" Value="@group.Key">@L[group.Label]</MudSelectItem>
+                }
+            </MudSelect>
+            <MudStack Row="true" AlignItems="AlignItems.Center" Wrap="Wrap.Wrap" Spacing="3" Class="mt-3">
+                <MudSelect T="string" Label="@L["ResourceKindsFilter"]" MultiSelection="true" SelectedValues="_visibleKinds" SelectedValuesChanged="SetVisibleKindsAsync" Dense="true" Variant="Variant.Outlined" Style="min-width:280px;max-width:420px">
+                    @foreach (var kind in _items.Select(item => item.Kind).Distinct(StringComparer.OrdinalIgnoreCase).Order(StringComparer.OrdinalIgnoreCase))
+                    {
+                        <MudSelectItem T="string" Value="@kind">@kind</MudSelectItem>
+                    }
+                </MudSelect>
+                <MudTooltip Text="@L["ClearSelection"]">
+                    <MudIconButton Icon="@Icons.Material.Filled.Close" Color="Color.Default" Size="Size.Small"
+                                   Disabled="_visibleKinds.Count == 0" OnClick="ClearVisibleKindsAsync"
+                                   title="@L["ClearSelection"]" aria-label="@L["ClearSelection"]" />
+                </MudTooltip>
+                <MudSwitch T="bool" Value="_hideKubernetesSystemResources" ValueChanged="SetHideSystemResourcesAsync" Color="Color.Primary">@L["HideKubernetesSystemResources"]</MudSwitch>
+                <MudSwitch T="bool" Value="_hideControllerManagedResources" ValueChanged="SetHideControllerManagedResourcesAsync" Color="Color.Primary">@L["HideControllerManagedResources"]</MudSwitch>
+                <MudSwitch T="bool" Value="_hideStandaloneResources" ValueChanged="SetHideStandaloneResourcesAsync" Color="Color.Primary">@L["HideStandaloneResources"]</MudSwitch>
+            </MudStack>
+            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-1">@L["ResourceOriginFilterNote"]</MudText>
+            @if (_loading)
+            {
+                <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mt-3" />
+            }
+        </MudPaper>
+
+        @if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <MudAlert Severity="Severity.Error" Variant="Variant.Outlined">@_error</MudAlert>
+        }
+        @if (_failures.Count > 0)
+        {
+            <MudAlert Severity="Severity.Warning" Dense="true">@L["TreePartialFailures", _failures.Count] (@string.Join(", ", _failures))</MudAlert>
+        }
+
+        @if (_graphNodes.Count > 2)
+        {
+            <div class="resource-graph-fullscreen-host" @ref="_fullscreenHost">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="resource-graph-toolbar">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.ZoomOut" OnClick="ZoomOut" Disabled="_zoom <= 0.6">−</MudButton>
+                        <MudButton Variant="Variant.Outlined" OnClick="ResetZoom">@((int)(_zoom * 100))%</MudButton>
+                        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.ZoomIn" OnClick="ZoomIn" Disabled="_zoom >= 1.5">+</MudButton>
+                    </MudStack>
+                    <MudIconButton Icon="@(_isFullscreen ? Icons.Material.Filled.FullscreenExit : Icons.Material.Filled.Fullscreen)" title="@(_isFullscreen ? L["ExitFullscreen"] : L["Fullscreen"])" Color="Color.Primary" OnClick="ToggleFullscreenAsync" />
+                </MudStack>
+                <MudStack Row="true" Spacing="3" AlignItems="AlignItems.Center" Class="resource-graph-legend">
+                    <span><i class="legend-line context-edge"></i>@L["ContextRelationLegend"]</span>
+                    <span><i class="legend-line owner-edge"></i>@L["OwnerRelationLegend"]</span>
+                    <span><i class="legend-line selector-edge"></i>@L["ServiceRelationLegend"]</span>
+                    <span><i class="legend-line control-edge"></i>@L["ControlRelationLegend"]</span>
+                    <span><i class="legend-line scheduling-edge"></i>@L["SchedulingRelationLegend"]</span>
+                    <span><i class="legend-line reference-edge"></i>@L["ReferenceRelationLegend"]</span>
+                    <span><i class="legend-line composition-edge"></i>@L["CompositionRelationLegend"]</span>
+                </MudStack>
+            <div class="resource-graph-canvas" @ref="_graphCanvas">
+                <div class="resource-graph-viewport" style="width:@(_graphWidth * _zoom)px;height:@(_graphHeight * _zoom)px">
+                    <div class="resource-graph-scaled" style="width:@(_graphWidth)px;height:@(_graphHeight)px;transform:scale(@_zoom.ToString(System.Globalization.CultureInfo.InvariantCulture))">
+                        @foreach (var column in GraphColumns)
+                        {
+                            <div class="resource-graph-column-heading" style="left:@(column.X)px;top:8px" title="@column.Kinds">
+                                <span>@column.Level</span>
+                                <small>@column.Kinds</small>
+                            </div>
+                            <div class="resource-graph-column-rule" style="left:@(column.X - 18)px;top:42px;height:@(_graphHeight - 54)px" aria-hidden="true"></div>
+                        }
+                        <svg class="resource-graph-edges" width="@_graphWidth" height="@_graphHeight" viewBox="0 0 @_graphWidth @_graphHeight" aria-hidden="true">
+                            <defs>
+                                <marker id="resource-graph-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+                                    <path d="M0,0 L8,4 L0,8 z" class="resource-graph-arrow-head" />
+                                </marker>
+                            </defs>
+                            @foreach (var edge in _edges)
+                            {
+                                <path d="@GetEdgePath(edge)" class="resource-graph-edge @GetEdgeClass(edge) @GetHighlightClass(edge)" marker-end="url(#resource-graph-arrow)">
+                                    <title>@GetEdgeLabel(edge)</title>
+                                </path>
+                            }
+                        </svg>
+                        @foreach (var node in _graphNodes)
+                        {
+                            <button @key="node.Id" type="button"
+                                    class="resource-graph-node @(node.IsComposition ? "composition-node" : node.IsContextRoot ? "context-root" : node.IsNamespaceRoot ? "namespace-root" : "") @((node.IsNamespaceRoot && _selectedNodeId is null) || node.Id == _selectedNodeId ? "selected" : "") @GetHighlightClass(node.Id)"
+                                    style="left:@(node.X)px;top:@(node.Y)px"
+                                    title="@($"{node.Kind}: {node.Name}")"
+                                    @onclick="() => SelectGraphNode(node)">
+                                @if (node.IsContextRoot)
+                                {
+                                    <span class="resource-graph-root-icon"><MudIcon Icon="@Icons.Material.Filled.Cloud" /></span>
+                                    <span class="resource-graph-node-content">
+                                        <span class="resource-graph-kind">@L["Cluster"]</span>
+                                        <span class="resource-graph-name">@node.Name</span>
+                                        <span class="resource-graph-badge">@L["Cluster"].Value.ToLowerInvariant()</span>
+                                    </span>
+                                }
+                                else if (node.IsNamespaceRoot)
+                                {
+                                    <span class="resource-graph-root-icon"><MudIcon Icon="@Icons.Material.Filled.Layers" /></span>
+                                    <span class="resource-graph-node-content">
+                                        <span class="resource-graph-kind">@L["Namespace"]</span>
+                                        <span class="resource-graph-name">@node.Name</span>
+                                        <span class="resource-graph-badge">@L["Namespace"].Value.ToLowerInvariant()</span>
+                                    </span>
+                                }
+                                else
+                                {
+                                    <MudIcon Icon="@GetResourceIcon(node.Kind)" Class="resource-graph-icon" />
+                                    <span class="resource-graph-node-content">
+                                        <span class="resource-graph-kind">@node.Kind</span>
+                                        <span class="resource-graph-name">@node.Name</span>
+                                        @if (!string.IsNullOrWhiteSpace(node.Details))
+                                        {
+                                            <span class="resource-graph-status">@node.Details</span>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(node.Status))
+                                        {
+                                            <span class="resource-graph-status @GetStatusClass(node.Status)">@node.Status</span>
+                                        }
+                                        @if (!node.IsComposition)
+                                        {
+                                            <span class="resource-graph-badge">@node.Kind.ToLowerInvariant()</span>
+                                        }
+                                    </span>
+                                }
+                            </button>
+                            @if (node.HasChildren)
+                            {
+                                <button type="button" class="resource-graph-toggle" style="left:@(node.X + GraphNodeWidth - 30)px;top:@(node.Y + 5)px"
+                                        title="@(node.IsCollapsed ? L["Expand"] : L["Collapse"])"
+                                        aria-label="@(node.IsCollapsed ? L["Expand"] : L["Collapse"])"
+                                        @onclick="() => ToggleNode(node.Id)" @onclick:stopPropagation="true">
+                                    <MudIcon Icon="@(node.IsCollapsed ? Icons.Material.Filled.Add : Icons.Material.Filled.Remove)" Size="Size.Small" />
+                                </button>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+            </div>
+        }
+        else if (!_loading && string.IsNullOrWhiteSpace(_error))
+        {
+            <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">@(_visibleKinds.Count > 0 || _hideKubernetesSystemResources || _hideControllerManagedResources || _hideStandaloneResources ? L["NoObjectsForFilter"] : L["NoResourcesInNamespace"])</MudAlert>
+        }
+
+        @if (_detailsOpen && _selectedNodeId is not null && _graphNodeById.TryGetValue(_selectedNodeId, out var selectedNode))
+        {
+            <div class="resource-details-backdrop" @onclick="CloseDetails"></div>
+            <aside class="resource-details-drawer" role="dialog" aria-modal="true" aria-labelledby="resource-details-title" tabindex="-1">
+                <MudStack Spacing="3">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                        <div>
+                            <MudText Typo="Typo.overline" Color="Color.Primary">@selectedNode.Kind</MudText>
+                            <MudText id="resource-details-title" Typo="Typo.h6">@selectedNode.Name</MudText>
+                        </div>
+                        <MudIconButton Icon="@Icons.Material.Filled.Close" Color="Color.Default" title="@L["Close"]" OnClick="CloseDetails" />
+                    </MudStack>
+                    @if (selectedNode.Resource is { } selectedResource)
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">@selectedResource.GroupVersion · @selectedResource.ResourceName</MudText>
+                        <MudText Typo="Typo.body2">@L["Namespace"]: @(string.IsNullOrEmpty(selectedResource.Namespace) ? L["ClusterScope"] : selectedResource.Namespace)</MudText>
+                        @if (_showYaml && selectedResource.Kind == "Secret")
+                        {
+                            <MudAlert Severity="Severity.Info" Dense="true">@L["SecretYamlRedacted"]</MudAlert>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(selectedResource.Status))
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined">@selectedResource.Status</MudChip>
+                        }
+                        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Code" OnClick="ToggleYamlAsync">@(_showYaml ? L["ShowDetails"] : L["ViewAsYaml"])</MudButton>
+                        @if (_showYaml && _yamlLoading)
+                        {
+                            <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+                        }
+                        else if (_showYaml && !string.IsNullOrWhiteSpace(_selectedYaml))
+                        {
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="yaml-reader-toolbar">
+                                <MudText Typo="Typo.subtitle2">@L["ObservedYaml"]</MudText>
+                                <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ContentCopy" OnClick="CopyYamlAsync">@(_yamlCopied ? L["YamlCopied"] : L["CopyYaml"])</MudButton>
+                            </MudStack>
+                            @if (_yamlCopyFailed)
+                            {
+                                <MudAlert Severity="Severity.Warning" Dense="true">@L["ClipboardUnavailable"]</MudAlert>
+                            }
+                            <pre class="resource-yaml-view">@_selectedYaml</pre>
+                        }
+                        @if (!_showYaml && selectedResource.Labels.Count > 0)
+                        {
+                            <MudDivider />
+                            <MudText Typo="Typo.subtitle2">@L["Labels"]</MudText>
+                            <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="1">
+                                @foreach (var label in selectedResource.Labels)
+                                {
+                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@label.Key=@label.Value</MudChip>
+                                }
+                            </MudStack>
+                        }
+                        @if (!_showYaml && selectedResource.Annotations.Count > 0)
+                        {
+                            <MudDivider />
+                            <MudText Typo="Typo.subtitle2">@L["Annotations"]</MudText>
+                            <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="1">
+                                @foreach (var annotation in selectedResource.Annotations)
+                                {
+                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@annotation.Key=@TruncateAnnotation(annotation.Value)</MudChip>
+                                }
+                            </MudStack>
+                        }
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">@selectedNode.Details</MudText>
+                    }
+                    <MudDivider />
+                    <MudText Typo="Typo.subtitle1">@L["RelatedResources"]</MudText>
+                    @if (GetRelatedNodes(selectedNode.Id).Count == 0)
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">@L["NoRelatedResources"]</MudText>
+                    }
+                    else
+                    {
+                        <MudStack Spacing="1">
+                            @foreach (var relatedNode in GetRelatedNodes(selectedNode.Id))
+                            {
+                                <MudButton Class="related-resource-link" Variant="Variant.Text" StartIcon="@GetResourceIcon(relatedNode.Kind)" OnClick="() => SelectRelatedNode(relatedNode)">
+                                    <span>@relatedNode.Kind · @relatedNode.Name</span>
+                                </MudButton>
+                            }
+                        </MudStack>
+                    }
+                </MudStack>
+            </aside>
+        }
+    }
+</MudStack>
+
+@code {
+    private static readonly (string Key, string Label)[] FunctionalGroups =
+    [
+        ("All", "AllResourceGroups"),
+        ("Infrastructure", "GraphGroupInfrastructure"),
+        ("Organization", "GraphGroupOrganization"),
+        ("Workloads", "GraphGroupWorkloads"),
+        ("Processing", "GraphGroupProcessing"),
+        ("Scaling", "GraphGroupScaling"),
+        ("Networking", "GraphGroupNetworking"),
+        ("Storage", "GraphGroupStorage"),
+        ("Configuration", "GraphGroupConfiguration"),
+        ("Security", "GraphGroupSecurity"),
+        ("Policies", "GraphGroupPolicies"),
+        ("Extensibility", "GraphGroupExtensibility"),
+        ("Operations", "GraphGroupOperations")
+    ];
+
+    private sealed record GraphLayoutEntry(string Id, string Kind, string Name, string Status, string Details,
+        string Group, KubernetesResourceGraphItem? Resource, bool IsComposition, int Depth);
+    private sealed record GraphColumnHeader(double X, string Level, string Kinds);
+
+    private IReadOnlyList<KubernetesGraphNodeLayout> _graphNodes = [];
+    private IReadOnlyList<KubernetesGraphEdge> _edges = [];
+    private IReadOnlyDictionary<string, KubernetesGraphNodeLayout> _graphNodeById = new Dictionary<string, KubernetesGraphNodeLayout>();
+    private IReadOnlyList<KubernetesResourceGraphItem> _items = [];
+    private IReadOnlyList<string> _failures = [];
+    private string? _selectedNodeId;
+    private readonly HashSet<string> _highlightedNodeIds = new(StringComparer.Ordinal);
+    private readonly HashSet<KubernetesGraphEdge> _highlightedEdges = [];
+    private HashSet<string> _visibleKinds = new(StringComparer.OrdinalIgnoreCase);
+    private string? _error;
+    private bool _loading;
+    private double _zoom = 1;
+    private double _graphWidth = 0;
+    private double _graphHeight = 0;
+    private string _selectedFunctionalGroup = "All";
+    private bool _hideKubernetesSystemResources;
+    private bool _hideControllerManagedResources;
+    private bool _hideStandaloneResources;
+    private bool _preferencesRestored;
+    private bool _detailsOpen;
+    private bool _showYaml;
+    private bool _yamlLoading;
+    private string? _selectedYaml;
+    private bool _yamlCopied;
+    private bool _yamlCopyFailed;
+    private bool _isFullscreen;
+    private bool _graphUiInitialized;
+    private ElementReference _graphCanvas;
+    private ElementReference _fullscreenHost;
+    private DotNetObjectReference<Home>? _selfReference;
+    private readonly HashSet<string> _collapsedNodeIds = new(StringComparer.Ordinal);
+    private CancellationTokenSource? _loadCts;
+    private long _lastSelectionRevision;
+    private IReadOnlyList<GraphColumnHeader> GraphColumns => _graphNodes
+        .Where(node => !node.IsContextRoot && !node.IsNamespaceRoot)
+        .GroupBy(node => node.X)
+        .OrderBy(group => group.Key)
+        .Select((group, index) => new GraphColumnHeader(group.Key, L["HierarchyLevel", index + 1],
+            string.Join(" · ", group.Select(node => node.Kind).Distinct(StringComparer.OrdinalIgnoreCase)
+                .Order(StringComparer.OrdinalIgnoreCase))))
+        .ToArray();
+
+    protected override void OnInitialized() => ClusterService.SelectionChanged += OnSelectionChanged;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ClusterService.EnsureProfilesLoadedAsync();
+        if (ClusterService.IsConnected && !string.IsNullOrWhiteSpace(ClusterService.CurrentNamespace))
+            await LoadTreeAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_graphUiInitialized && _graphNodes.Count > 2)
+        {
+            _selfReference ??= DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("kvGraph.initialize", _graphCanvas, _fullscreenHost, _selfReference);
+            _graphUiInitialized = true;
+        }
+        if (!firstRender || _preferencesRestored) return;
+        _preferencesRestored = true;
+        try
+        {
+            var preferences = await JS.InvokeAsync<DashboardUiPreferences?>("kvUiState.read", "dashboard");
+            if (preferences is null) return;
+            _selectedFunctionalGroup = FunctionalGroups.Any(group => group.Key == preferences.FunctionalGroup)
+                ? preferences.FunctionalGroup : "All";
+            _visibleKinds.UnionWith(preferences.VisibleKinds ?? []);
+            _hideKubernetesSystemResources = preferences.HideKubernetesSystemResources;
+            _hideControllerManagedResources = preferences.HideControllerManagedResources;
+            _hideStandaloneResources = preferences.HideStandaloneResources;
+            _collapsedNodeIds.UnionWith(preferences.CollapsedNodeIds ?? []);
+            _zoom = Math.Clamp(preferences.Zoom, 0.6, 1.5);
+            if (_items.Count > 0 && !string.IsNullOrWhiteSpace(ClusterService.CurrentNamespace)) BuildGraph(_items, ClusterService.CurrentNamespace);
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (JSException) { }
+    }
+
+    private Task SelectNamespaceAsync(string namespaceName) => ClusterService.SelectNamespaceAsync(namespaceName);
+
+    private async Task SetFunctionalGroupAsync(string group)
+    {
+        if (_selectedFunctionalGroup == group) return;
+        _selectedFunctionalGroup = group;
+        if (!string.IsNullOrWhiteSpace(ClusterService.CurrentNamespace)) BuildGraph(_items, ClusterService.CurrentNamespace);
+        await PersistUiPreferencesAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task SetVisibleKindsAsync(IEnumerable<string> kinds)
+    {
+        _visibleKinds = new HashSet<string>(kinds, StringComparer.OrdinalIgnoreCase);
+        if (!string.IsNullOrWhiteSpace(ClusterService.CurrentNamespace)) BuildGraph(_items, ClusterService.CurrentNamespace);
+        await PersistUiPreferencesAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private Task ClearVisibleKindsAsync() => SetVisibleKindsAsync([]);
+
+    private async Task SetHideSystemResourcesAsync(bool value)
+    {
+        _hideKubernetesSystemResources = value;
+        if (!string.IsNullOrWhiteSpace(ClusterService.CurrentNamespace)) BuildGraph(_items, ClusterService.CurrentNamespace);
+        await PersistUiPreferencesAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task SetHideControllerManagedResourcesAsync(bool value)
+    {
+        _hideControllerManagedResources = value;
+        if (!string.IsNullOrWhiteSpace(ClusterService.CurrentNamespace)) BuildGraph(_items, ClusterService.CurrentNamespace);
+        await PersistUiPreferencesAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task SetHideStandaloneResourcesAsync(bool value)
+    {
+        _hideStandaloneResources = value;
+        if (!string.IsNullOrWhiteSpace(ClusterService.CurrentNamespace)) BuildGraph(_items, ClusterService.CurrentNamespace);
+        await PersistUiPreferencesAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ToggleNode(string id)
+    {
+        if (!_collapsedNodeIds.Add(id)) _collapsedNodeIds.Remove(id);
+        if (!string.IsNullOrWhiteSpace(ClusterService.CurrentNamespace)) BuildGraph(_items, ClusterService.CurrentNamespace);
+        await PersistUiPreferencesAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private Task PersistUiPreferencesAsync() => JS.InvokeVoidAsync("kvUiState.write", "dashboard",
+        new DashboardUiPreferences(_selectedFunctionalGroup, _visibleKinds.Order(StringComparer.OrdinalIgnoreCase).ToArray(),
+            _hideKubernetesSystemResources, _hideControllerManagedResources, _hideStandaloneResources,
+            _collapsedNodeIds.ToArray(), _zoom)).AsTask();
+
+    private async Task LoadTreeAsync()
+    {
+        if (!ClusterService.IsConnected || string.IsNullOrWhiteSpace(ClusterService.CurrentNamespace)) return;
+        CancelLoad(_loadCts);
+        var cts = _loadCts = new CancellationTokenSource();
+        _loading = true;
+        _error = null;
+        _failures = [];
+        _graphNodes = [];
+        _edges = [];
+        _graphNodeById = new Dictionary<string, KubernetesGraphNodeLayout>();
+        _items = [];
+        _selectedNodeId = null;
+        _detailsOpen = false;
+        _showYaml = false;
+        _selectedYaml = null;
+        _yamlCopied = false;
+        _yamlCopyFailed = false;
+        _highlightedNodeIds.Clear();
+        _highlightedEdges.Clear();
+        StateHasChanged();
+        try
+        {
+            var types = await ClusterService.GetResourceTypesAsync(cts.Token);
+            var items = new System.Collections.Concurrent.ConcurrentBag<KubernetesResourceGraphItem>();
+            var failures = new System.Collections.Concurrent.ConcurrentBag<string>();
+            var namespaceName = ClusterService.CurrentNamespace;
+            await Parallel.ForEachAsync(types.Where(type => type.Kind != "Namespace"),
+                new ParallelOptions { MaxDegreeOfParallelism = 6, CancellationToken = cts.Token },
+                async (type, token) =>
+                {
+                    try
+                    {
+                        foreach (var item in await ClusterService.ListResourceGraphItemsAsync(type, type.Namespaced ? namespaceName : null, token))
+                            items.Add(item);
+                    }
+                    catch (Exception exception) when (exception is not OperationCanceledException)
+                    {
+                        failures.Add(type.Kind);
+                    }
+                });
+
+            if (cts.IsCancellationRequested) return;
+            _items = items.OrderBy(item => item.Kind, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(item => item.Name, StringComparer.OrdinalIgnoreCase).ToArray();
+            _failures = failures.Distinct(StringComparer.OrdinalIgnoreCase).Order(StringComparer.OrdinalIgnoreCase).ToArray();
+            BuildGraph(_items, namespaceName!);
+        }
+        catch (OperationCanceledException) when (cts.IsCancellationRequested) { }
+        catch (Exception exception)
+        {
+            _error = $"{L["CouldNotLoadResourceTree"]}: {exception.Message}";
+        }
+        finally
+        {
+            if (ReferenceEquals(_loadCts, cts))
+            {
+                _loadCts = null;
+                _loading = false;
+            }
+            cts.Dispose();
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private const double GraphNodeWidth = 236;
+    private const double GraphNodeHeight = 76;
+    private const double GraphColumnGap = 106;
+    private const double GraphRowGap = 22;
+    private const double GraphTopPadding = 44;
+    private const double GraphLeftPadding = 42;
+    private const string ClusterRootId = "__cluster_root__";
+    private const string NamespaceRootId = "__namespace_root__";
+    private static readonly HashSet<string> BuiltInApiGroups = new(StringComparer.Ordinal)
+    {
+        "apps", "batch", "autoscaling", "networking.k8s.io", "discovery.k8s.io", "storage.k8s.io",
+        "rbac.authorization.k8s.io", "policy", "scheduling.k8s.io", "coordination.k8s.io", "events.k8s.io",
+        "certificates.k8s.io", "admissionregistration.k8s.io", "apiregistration.k8s.io", "node.k8s.io",
+        "metrics.k8s.io", "resource.k8s.io", "flowcontrol.apiserver.k8s.io", "authentication.k8s.io",
+        "authorization.k8s.io"
+    };
+
+    private void BuildGraph(IReadOnlyList<KubernetesResourceGraphItem> sourceItems, string namespaceName)
+    {
+        var allItems = sourceItems.Where(item => !string.IsNullOrWhiteSpace(item.Uid)
+                                                  && (!_hideKubernetesSystemResources || !item.IsKubernetesSystemManaged)
+                                                  && (!_hideControllerManagedResources || !item.IsControllerManaged)
+                                                  && (!_hideStandaloneResources || item.IsKubernetesSystemManaged || item.IsControllerManaged)
+                                                  && (_visibleKinds.Count == 0 || _visibleKinds.Contains(item.Kind)))
+            .GroupBy(item => item.Uid, StringComparer.Ordinal)
+            .Select(group => group.First()).ToArray();
+        var allByUid = allItems.ToDictionary(item => item.Uid, StringComparer.Ordinal);
+        var allEdges = new List<KubernetesGraphEdge>();
+        var allOwnerByUid = new Dictionary<string, string>(StringComparer.Ordinal);
+
+        foreach (var item in allItems)
+        {
+            var availableOwners = item.OwnerReferences.Where(reference => allByUid.ContainsKey(reference.Uid)).ToArray();
+            var owner = availableOwners.FirstOrDefault(reference => reference.IsController) ?? availableOwners.FirstOrDefault();
+            if (owner is null) continue;
+            allOwnerByUid[item.Uid] = owner.Uid;
+            allEdges.Add(new KubernetesGraphEdge(owner.Uid, item.Uid, owner.IsController ? "owner" : "owner-reference"));
+            foreach (var additionalOwner in availableOwners.Where(reference => reference.Uid != owner.Uid))
+                allEdges.Add(new KubernetesGraphEdge(additionalOwner.Uid, item.Uid, "owner-reference"));
+        }
+
+        var pods = allItems.Where(item => item.Kind == "Pod").ToArray();
+        var services = allItems.Where(item => item.Kind == "Service" && item.Selector.Count > 0)
+            .OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase).ToArray();
+        foreach (var service in services)
+        {
+            foreach (var pod in pods.Where(pod => service.Selector.All(selector =>
+                         pod.Labels.TryGetValue(selector.Key, out var value) && value == selector.Value)))
+            {
+                allEdges.Add(new KubernetesGraphEdge(service.Uid, pod.Uid, "service-selector-pod"));
+            }
+        }
+
+        var referenceTargets = allItems.GroupBy(item => (item.Kind, item.Name, item.Namespace),
+                EqualityComparer<(string Kind, string Name, string Namespace)>.Default)
+            .ToDictionary(group => group.Key, group => group.First());
+        foreach (var source in allItems)
+        foreach (var reference in source.References)
+        {
+            if (reference.Relationship == "crd-defines-resource")
+            {
+                var customResources = allItems.Where(item => item.Kind == reference.Name
+                    && item.GroupVersion.StartsWith($"{reference.ApiGroup}/", StringComparison.Ordinal));
+                foreach (var customResource in customResources)
+                    allEdges.Add(new KubernetesGraphEdge(source.Uid, customResource.Uid, "crd-defines-resource"));
+                continue;
+            }
+            if (reference.Relationship is "network-policy-selector" or "pdb-selector")
+            {
+                foreach (var pod in pods.Where(pod => pod.Namespace == (reference.Namespace ?? string.Empty)
+                             && SelectorMatches(pod.Labels, reference.Selector, reference.SelectorRequirements)))
+                    allEdges.Add(new KubernetesGraphEdge(source.Uid, pod.Uid, reference.Relationship));
+                continue;
+            }
+            var targetNamespace = reference.Namespace ?? string.Empty;
+            if (!referenceTargets.TryGetValue((reference.Kind, reference.Name, targetNamespace), out var target)) continue;
+            var edge = reference.TargetIsParent
+                ? new KubernetesGraphEdge(target.Uid, source.Uid, reference.Relationship)
+                : new KubernetesGraphEdge(source.Uid, target.Uid, reference.Relationship);
+            if (reference.Relationship == "service-endpoint-slice"
+                && allEdges.Any(existing => existing.SourceId == edge.SourceId && existing.TargetId == edge.TargetId)) continue;
+            if (!allEdges.Contains(edge)) allEdges.Add(edge);
+        }
+
+        HashSet<string> activeIds;
+        if (_selectedFunctionalGroup == "All" && _visibleKinds.Count == 0)
+        {
+            activeIds = allItems.Select(item => item.Uid).ToHashSet(StringComparer.Ordinal);
+        }
+        else
+        {
+            activeIds = allItems.Where(item => (_selectedFunctionalGroup == "All" || GetFunctionalGroup(item) == _selectedFunctionalGroup)
+                                                && (_visibleKinds.Count == 0 || _visibleKinds.Contains(item.Kind)))
+                .Select(item => item.Uid).ToHashSet(StringComparer.Ordinal);
+            foreach (var edge in allEdges.Where(edge => activeIds.Contains(edge.SourceId) || activeIds.Contains(edge.TargetId)).ToArray())
+            {
+                activeIds.Add(edge.SourceId);
+                activeIds.Add(edge.TargetId);
+            }
+            foreach (var uid in activeIds.ToArray())
+            {
+                var current = uid;
+                var visitedOwnerChain = new HashSet<string>(StringComparer.Ordinal);
+                while (allOwnerByUid.TryGetValue(current, out var ownerUid) && visitedOwnerChain.Add(ownerUid))
+                {
+                    activeIds.Add(ownerUid);
+                    current = ownerUid;
+                }
+            }
+            var dependentByOwner = allOwnerByUid.GroupBy(pair => pair.Value, pair => pair.Key)
+                .ToDictionary(group => group.Key, group => group.ToArray(), StringComparer.Ordinal);
+            var descendantQueue = new Queue<string>(activeIds);
+            while (descendantQueue.TryDequeue(out var ownerId))
+                foreach (var dependentId in dependentByOwner.GetValueOrDefault(ownerId, []))
+                    if (activeIds.Add(dependentId)) descendantQueue.Enqueue(dependentId);
+        }
+
+        var items = allItems.Where(item => activeIds.Contains(item.Uid)).ToArray();
+        var byUid = items.ToDictionary(item => item.Uid, StringComparer.Ordinal);
+        var ownerByUid = allOwnerByUid.Where(pair => byUid.ContainsKey(pair.Key) && byUid.ContainsKey(pair.Value))
+            .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
+        var edges = allEdges.Where(edge => activeIds.Contains(edge.SourceId) && activeIds.Contains(edge.TargetId)).ToList();
+
+        var compositionNodes = items.Where(item => item.Kind == "Pod")
+            .SelectMany(item => item.Compositions.Select(composition => new
+            {
+                Id = $"__composition__{item.Uid}__{composition.Kind}__{composition.Name}",
+                ParentId = item.Uid,
+                Composition = composition
+            })).ToArray();
+        edges.AddRange(compositionNodes.Select(node => new KubernetesGraphEdge(node.ParentId, node.Id, "composition")));
+
+        var resourceDepths = new Dictionary<string, int>(StringComparer.Ordinal);
+        int GetDepth(string uid, HashSet<string> path)
+        {
+            if (resourceDepths.TryGetValue(uid, out var cached)) return cached;
+            if (!path.Add(uid)) return 2;
+            var depth = ownerByUid.TryGetValue(uid, out var ownerUid) ? GetDepth(ownerUid, path) + 1 : 2;
+            path.Remove(uid);
+            resourceDepths[uid] = depth;
+            return depth;
+        }
+        foreach (var item in items) GetDepth(item.Uid, new HashSet<string>(StringComparer.Ordinal));
+        var depths = new Dictionary<string, int>(resourceDepths, StringComparer.Ordinal);
+        foreach (var composition in compositionNodes) depths[composition.Id] = resourceDepths[composition.ParentId] + 1;
+        var parentById = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var pair in ownerByUid) parentById[pair.Key] = pair.Value;
+        foreach (var composition in compositionNodes) parentById[composition.Id] = composition.ParentId;
+        var childrenByParent = parentById.GroupBy(pair => pair.Value, pair => pair.Key)
+            .ToDictionary(group => group.Key, group => group.ToArray(), StringComparer.Ordinal);
+
+        var validCollapseIds = allOwnerByUid.Values
+            .Concat(allItems.Where(item => item.Kind == "Pod" && item.Compositions.Count > 0).Select(item => item.Uid))
+            .ToHashSet(StringComparer.Ordinal);
+        _collapsedNodeIds.IntersectWith(validCollapseIds);
+        var hiddenIds = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var collapsedId in _collapsedNodeIds)
+        {
+            var stack = new Stack<string>(childrenByParent.GetValueOrDefault(collapsedId, []));
+            while (stack.TryPop(out var childId))
+            {
+                if (!hiddenIds.Add(childId)) continue;
+                foreach (var descendant in childrenByParent.GetValueOrDefault(childId, [])) stack.Push(descendant);
+            }
+        }
+
+        var visibleItems = items.Where(item => !hiddenIds.Contains(item.Uid)).ToArray();
+        var visibleCompositions = compositionNodes.Where(node => !hiddenIds.Contains(node.Id)).ToArray();
+        var visibleIds = visibleItems.Select(item => item.Uid).Concat(visibleCompositions.Select(node => node.Id)).ToHashSet(StringComparer.Ordinal);
+        var roots = visibleItems.Where(item => !ownerByUid.ContainsKey(item.Uid) || !visibleIds.Contains(ownerByUid[item.Uid])).ToArray();
+        edges.AddRange(roots.Select(item => new KubernetesGraphEdge(
+            item.Namespace.Length == 0 ? ClusterRootId : NamespaceRootId,
+            item.Uid,
+            item.Namespace.Length == 0 ? "cluster-scope" : "namespace")));
+        edges.Add(new KubernetesGraphEdge(ClusterRootId, NamespaceRootId, "cluster-namespace"));
+
+        var nodesToLayout = visibleItems.Select(item => new GraphLayoutEntry(
+                item.Uid, item.Kind, item.Name, item.Status, string.Empty,
+                GetFunctionalGroup(item), item, false, depths[item.Uid]))
+            .Concat(visibleCompositions.Select(node => new GraphLayoutEntry(
+                node.Id, node.Composition.Kind, node.Composition.Name, node.Composition.Status,
+                node.Composition.Details, "Workloads", null, true, depths[node.Id]))).ToArray();
+        var nodeInfo = nodesToLayout.ToDictionary(node => node.Id, StringComparer.Ordinal);
+        var layoutAdjacency = visibleIds.ToDictionary(id => id, _ => new HashSet<string>(StringComparer.Ordinal), StringComparer.Ordinal);
+        foreach (var edge in edges.Where(edge => visibleIds.Contains(edge.SourceId) && visibleIds.Contains(edge.TargetId) && IsLayoutRelationship(edge.Relationship)))
+        {
+            layoutAdjacency[edge.SourceId].Add(edge.TargetId);
+            layoutAdjacency[edge.TargetId].Add(edge.SourceId);
+        }
+
+        var structuralOrder = BuildStructuralOrder(visibleIds, childrenByParent, visibleItems, nodeInfo);
+        var components = new List<List<string>>();
+        var visited = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var startId in visibleIds.OrderBy(id => structuralOrder.GetValueOrDefault(id)))
+        {
+            if (!visited.Add(startId)) continue;
+            var component = new List<string>();
+            var queue = new Queue<string>();
+            queue.Enqueue(startId);
+            while (queue.TryDequeue(out var currentId))
+            {
+                component.Add(currentId);
+                foreach (var neighbor in layoutAdjacency[currentId])
+                    if (visited.Add(neighbor)) queue.Enqueue(neighbor);
+            }
+            components.Add(component);
+        }
+        var isolatedIds = components.Where(component => component.Count == 1 && layoutAdjacency[component[0]].Count == 0)
+            .SelectMany(component => component).ToArray();
+        if (isolatedIds.Length > 1)
+        {
+            components.RemoveAll(component => component.Count == 1 && layoutAdjacency[component[0]].Count == 0);
+            components.Add(isolatedIds.ToList());
+        }
+
+        var layoutBlocks = new List<(Dictionary<int, string[]> Columns, int Rows, int FirstOrder)>();
+        foreach (var component in components)
+        {
+            var componentSet = component.ToHashSet(StringComparer.Ordinal);
+            var componentColumns = component.GroupBy(id => depths[id]).ToDictionary(
+                group => group.Key,
+                group => group.OrderBy(id => structuralOrder.GetValueOrDefault(id)).ToList());
+            var orderIndex = componentColumns.SelectMany(group => group.Value.Select((id, index) => (id, index)))
+                .ToDictionary(pair => pair.id, pair => pair.index, StringComparer.Ordinal);
+
+            for (var pass = 0; pass < 5; pass++)
+            foreach (var depth in componentColumns.Keys.Order())
+            {
+                var column = componentColumns[depth];
+                column.Sort((left, right) =>
+                {
+                    double Score(string id)
+                    {
+                        var neighbors = layoutAdjacency[id].Where(componentSet.Contains).ToArray();
+                        return neighbors.Length == 0
+                            ? orderIndex[id]
+                            : neighbors.Average(neighbor => orderIndex.GetValueOrDefault(neighbor));
+                    }
+                    var comparison = Score(left).CompareTo(Score(right));
+                    return comparison != 0 ? comparison : structuralOrder.GetValueOrDefault(left).CompareTo(structuralOrder.GetValueOrDefault(right));
+                });
+                for (var index = 0; index < column.Count; index++) orderIndex[column[index]] = index;
+            }
+
+            layoutBlocks.Add((componentColumns.ToDictionary(pair => pair.Key, pair => pair.Value.ToArray()),
+                Math.Max(1, componentColumns.Values.Max(column => column.Count())),
+                component.Min(id => structuralOrder.GetValueOrDefault(id))));
+        }
+
+        layoutBlocks = layoutBlocks.OrderBy(block => block.FirstOrder).ToList();
+        var totalRows = layoutBlocks.Sum(block => block.Rows);
+        var betweenBlocks = Math.Max(0, layoutBlocks.Count - 1) * GraphRowGap * 2;
+        _graphHeight = Math.Max(520, GraphTopPadding * 2 + totalRows * GraphNodeHeight + Math.Max(0, totalRows - layoutBlocks.Count) * GraphRowGap + betweenBlocks);
+        var maxDepth = Math.Max(1, depths.Values.DefaultIfEmpty(1).Max());
+        _graphWidth = GraphLeftPadding * 2 + GraphNodeWidth + maxDepth * (GraphNodeWidth + GraphColumnGap);
+        var namespaceX = GraphLeftPadding + GraphNodeWidth + GraphColumnGap;
+
+        var layouts = new List<KubernetesGraphNodeLayout>
+        {
+            new(ClusterRootId, "Cluster", ClusterService.CurrentConnectionName ?? ClusterService.CurrentContextName ?? "Kubernetes", string.Empty,
+                GraphLeftPadding, (_graphHeight - GraphNodeHeight) / 2, true, false, "", "", false, false, false, null),
+            new(NamespaceRootId, "Namespace", namespaceName, string.Empty,
+                namespaceX, (_graphHeight - GraphNodeHeight) / 2, false, true, "Organization", "", false, false, false, null)
+        };
+        var blockTop = GraphTopPadding;
+        foreach (var block in layoutBlocks)
+        {
+            var blockHeight = block.Rows * GraphNodeHeight + Math.Max(0, block.Rows - 1) * GraphRowGap;
+            foreach (var column in block.Columns.OrderBy(pair => pair.Key))
+            {
+                var columnHeight = column.Value.Length * GraphNodeHeight + Math.Max(0, column.Value.Length - 1) * GraphRowGap;
+                var startY = blockTop + (blockHeight - columnHeight) / 2;
+                var x = namespaceX + ((column.Key - 1) * (GraphNodeWidth + GraphColumnGap));
+                for (var index = 0; index < column.Value.Length; index++)
+                {
+                    var item = nodeInfo[column.Value[index]];
+                    layouts.Add(new KubernetesGraphNodeLayout(item.Id, item.Kind, item.Name, item.Status,
+                        x, startY + index * (GraphNodeHeight + GraphRowGap), false, false, item.Group, item.Details,
+                        childrenByParent.ContainsKey(item.Id), _collapsedNodeIds.Contains(item.Id), item.IsComposition, item.Resource));
+                }
+            }
+            blockTop += blockHeight + GraphRowGap * 2;
+        }
+
+        _graphNodes = layouts;
+        _graphNodeById = layouts.ToDictionary(node => node.Id, StringComparer.Ordinal);
+        _edges = edges.Where(edge => (edge.SourceId == ClusterRootId || edge.SourceId == NamespaceRootId || visibleIds.Contains(edge.SourceId))
+                                     && (edge.TargetId == ClusterRootId || edge.TargetId == NamespaceRootId || visibleIds.Contains(edge.TargetId)))
+            .Distinct().ToArray();
+        if (_selectedNodeId is not null && _graphNodeById.ContainsKey(_selectedNodeId)) UpdateHighlights();
+        else CloseDetails();
+    }
+
+    private static Dictionary<string, int> BuildStructuralOrder(HashSet<string> visibleIds,
+        IReadOnlyDictionary<string, string[]> childrenByParent, IReadOnlyList<KubernetesResourceGraphItem> visibleItems,
+        IReadOnlyDictionary<string, GraphLayoutEntry> nodeInfo)
+    {
+        var order = new Dictionary<string, int>(StringComparer.Ordinal);
+        var next = 0;
+        void Visit(string id)
+        {
+            if (!visibleIds.Contains(id) || order.ContainsKey(id)) return;
+            order[id] = next++;
+            foreach (var child in childrenByParent.GetValueOrDefault(id, [])
+                         .Where(visibleIds.Contains)
+                         .OrderBy(childId => nodeInfo[childId].Kind, StringComparer.OrdinalIgnoreCase)
+                         .ThenBy(childId => nodeInfo[childId].Name, StringComparer.OrdinalIgnoreCase))
+                Visit(child);
+        }
+
+        foreach (var root in visibleItems.Where(item => !visibleIds.Contains(item.Uid) || !childrenByParent.Values.Any(children => children.Contains(item.Uid, StringComparer.Ordinal)))
+                     .OrderBy(item => item.Kind, StringComparer.OrdinalIgnoreCase)
+                     .ThenBy(item => item.Name, StringComparer.OrdinalIgnoreCase))
+            Visit(root.Uid);
+        foreach (var id in visibleIds.OrderBy(id => nodeInfo[id].Depth)
+                     .ThenBy(id => nodeInfo[id].Kind, StringComparer.OrdinalIgnoreCase)
+                     .ThenBy(id => nodeInfo[id].Name, StringComparer.OrdinalIgnoreCase))
+            Visit(id);
+        return order;
+    }
+
+    private static bool IsLayoutRelationship(string relationship) => relationship switch
+    {
+        "cluster-namespace" or "namespace" or "cluster-scope" or "pod-node" or "volume-attachment-node"
+            or "pod-runtime-class" or "pod-priority-class" or "pod-service-account" or "network-policy-selector"
+            or "pdb-selector" or "event-involved-object" or "crd-defines-resource" => false,
+        _ => true
+    };
+
+    private static bool SelectorMatches(IReadOnlyDictionary<string, string> labels,
+        IReadOnlyDictionary<string, string>? selector, IReadOnlyList<KubernetesLabelSelectorRequirement>? requirements)
+    {
+        if (selector is not null && selector.Any(pair => !labels.TryGetValue(pair.Key, out var value) || value != pair.Value)) return false;
+        if (requirements is null) return true;
+        foreach (var requirement in requirements)
+        {
+            var exists = labels.TryGetValue(requirement.Key, out var value);
+            var matches = requirement.Operator switch
+            {
+                "In" => exists && requirement.Values.Contains(value!, StringComparer.Ordinal),
+                "NotIn" => !exists || !requirement.Values.Contains(value!, StringComparer.Ordinal),
+                "Exists" => exists,
+                "DoesNotExist" => !exists,
+                _ => false
+            };
+            if (!matches) return false;
+        }
+        return true;
+    }
+
+    private static string GetFunctionalGroup(KubernetesResourceGraphItem item)
+    {
+        var mapped = item.Kind switch
+        {
+            "Node" or "RuntimeClass" => "Infrastructure",
+            "Namespace" => "Organization",
+            "Deployment" or "ReplicaSet" or "StatefulSet" or "DaemonSet" or "ReplicationController" or "Pod" => "Workloads",
+            "Job" or "CronJob" => "Processing",
+            "HorizontalPodAutoscaler" or "VerticalPodAutoscaler" => "Scaling",
+            "Service" or "Endpoints" or "EndpointSlice" or "Ingress" or "IngressClass" or "Gateway" or "GatewayClass"
+                or "HTTPRoute" or "GRPCRoute" or "TCPRoute" or "TLSRoute" or "UDPRoute" or "ReferenceGrant" or "BackendTLSPolicy" => "Networking",
+            "PersistentVolume" or "PersistentVolumeClaim" or "StorageClass" or "VolumeAttachment" or "CSIDriver" or "CSINode"
+                or "CSIStorageCapacity" or "VolumeSnapshot" or "VolumeSnapshotClass" or "VolumeSnapshotContent" => "Storage",
+            "ConfigMap" or "Secret" => "Configuration",
+            "ServiceAccount" or "Role" or "ClusterRole" or "RoleBinding" or "ClusterRoleBinding" or "CertificateSigningRequest" => "Security",
+            "NetworkPolicy" or "ResourceQuota" or "LimitRange" or "PriorityClass" or "PodDisruptionBudget" or "ValidatingAdmissionPolicy"
+                or "ValidatingAdmissionPolicyBinding" => "Policies",
+            "CustomResourceDefinition" or "MutatingWebhookConfiguration" or "ValidatingWebhookConfiguration" or "APIService" => "Extensibility",
+            "Event" or "Lease" or "ComponentStatus" or "PodMetrics" or "NodeMetrics" => "Operations",
+            _ => string.Empty
+        };
+        if (mapped.Length > 0) return mapped;
+        var apiGroup = item.GroupVersion.Contains('/') ? item.GroupVersion[..item.GroupVersion.IndexOf('/')] : string.Empty;
+        return apiGroup.Length == 0 || BuiltInApiGroups.Contains(apiGroup) ? "Operations" : "Extensibility";
+    }
+
+    private static bool SelectorMatches(IReadOnlyDictionary<string, string> labels, KubernetesResourceGraphReference reference) =>
+        SelectorMatches(labels, reference.Selector, reference.SelectorRequirements);
+
+    private string GetEdgePath(KubernetesGraphEdge edge)
+    {
+        if (!_graphNodeById.TryGetValue(edge.SourceId, out var source) || !_graphNodeById.TryGetValue(edge.TargetId, out var target)) return string.Empty;
+        var forward = target.X > source.X;
+        var startX = forward ? source.X + GraphNodeWidth : source.X;
+        var startY = source.Y + GraphNodeHeight / 2;
+        var endX = forward ? target.X : target.X + GraphNodeWidth;
+        var endY = target.Y + GraphNodeHeight / 2;
+        var bendX = startX + (endX - startX) / 2;
+        return $"M {startX} {startY} C {bendX} {startY}, {bendX} {endY}, {endX} {endY}";
+    }
+
+    private static string GetEdgeClass(KubernetesGraphEdge edge) => edge.Relationship switch
+    {
+        "cluster-namespace" or "namespace" or "cluster-scope" => "context-edge",
+        "owner" => "owner-edge",
+        "owner-reference" => "reference-edge",
+        "service-selector-pod" or "network-policy-selector" or "pdb-selector" => "selector-edge",
+        "hpa-target" or "vpa-target" => "control-edge",
+        "pod-node" or "volume-attachment-node" => "scheduling-edge",
+        "composition" => "composition-edge",
+        _ => "reference-edge"
+    };
+
+    private string GetEdgeLabel(KubernetesGraphEdge edge) => edge.Relationship switch
+    {
+        "cluster-namespace" or "namespace" or "cluster-scope" => L["ContextRelationLegend"],
+        "owner" => L["OwnerRelationLegend"],
+        "owner-reference" => L["ReferenceRelationLegend"],
+        "service-selector-pod" => L["ServiceRelationLegend"],
+        "network-policy-selector" or "pdb-selector" => L["PolicySelectorRelationLegend"],
+        "hpa-target" or "vpa-target" => L["ControlRelationLegend"],
+        "pod-node" or "volume-attachment-node" => L["SchedulingRelationLegend"],
+        "composition" => L["CompositionRelationLegend"],
+        _ => L["ReferenceRelationLegend"]
+    };
+
+    private void SelectGraphNode(KubernetesGraphNodeLayout node)
+    {
+        if (node.IsContextRoot || node.IsNamespaceRoot)
+        {
+            CloseDetails();
+            return;
+        }
+        if (_selectedNodeId == node.Id)
+        {
+            _detailsOpen = true;
+            return;
+        }
+        _selectedNodeId = node.Id;
+        _detailsOpen = false;
+        _showYaml = false;
+        _selectedYaml = null;
+        _yamlCopied = false;
+        _yamlCopyFailed = false;
+        UpdateHighlights();
+    }
+
+    private void SelectRelatedNode(KubernetesGraphNodeLayout node)
+    {
+        _selectedNodeId = node.Id;
+        _detailsOpen = true;
+        _showYaml = false;
+        _selectedYaml = null;
+        UpdateHighlights();
+    }
+
+    private void CloseDetails()
+    {
+        _selectedNodeId = null;
+        _detailsOpen = false;
+        _showYaml = false;
+        _selectedYaml = null;
+        _highlightedNodeIds.Clear();
+        _highlightedEdges.Clear();
+    }
+
+    private async Task ToggleYamlAsync()
+    {
+        if (_showYaml)
+        {
+            _showYaml = false;
+            return;
+        }
+        if (_selectedNodeId is null || !_graphNodeById.TryGetValue(_selectedNodeId, out var node) || node.Resource is not { } resource) return;
+        _showYaml = true;
+        _yamlLoading = true;
+        _selectedYaml = null;
+        _yamlCopied = false;
+        _yamlCopyFailed = false;
+        try
+        {
+            _selectedYaml = await ClusterService.GetResourceYamlAsync(resource.GroupVersion, resource.ResourceName,
+                resource.Kind, resource.Name, resource.Namespace);
+        }
+        catch (Exception exception)
+        {
+            _selectedYaml = $"{L["CouldNotLoadYaml"]}: {exception.Message}";
+        }
+        finally { _yamlLoading = false; }
+    }
+
+    private async Task CopyYamlAsync()
+    {
+        _yamlCopyFailed = !await JS.InvokeAsync<bool>("kvClipboard.copy", _selectedYaml ?? string.Empty);
+        _yamlCopied = !_yamlCopyFailed;
+    }
+
+    private async Task ToggleFullscreenAsync()
+    {
+        try { _isFullscreen = await JS.InvokeAsync<bool>("kvGraph.toggleFullscreen", _fullscreenHost); }
+        catch (JSException) { _isFullscreen = false; }
+    }
+
+    [JSInvokable]
+    public Task OnFullscreenChanged(bool isFullscreen) => InvokeAsync(() =>
+    {
+        _isFullscreen = isFullscreen;
+        StateHasChanged();
+    });
+
+    private void UpdateHighlights()
+    {
+        _highlightedNodeIds.Clear();
+        _highlightedEdges.Clear();
+        if (_selectedNodeId is null) return;
+        _highlightedNodeIds.Add(_selectedNodeId);
+        foreach (var edge in _edges.Where(edge => !IsContextRelationship(edge.Relationship)
+                     && (edge.SourceId == _selectedNodeId || edge.TargetId == _selectedNodeId)))
+        {
+            var relatedId = edge.SourceId == _selectedNodeId ? edge.TargetId : edge.SourceId;
+            if (!_graphNodeById.ContainsKey(relatedId)) continue;
+            _highlightedEdges.Add(edge);
+            _highlightedNodeIds.Add(relatedId);
+        }
+    }
+
+    private IReadOnlyList<KubernetesGraphNodeLayout> GetRelatedNodes(string nodeId) => _edges
+        .Where(edge => _highlightedEdges.Contains(edge))
+        .Select(edge => edge.SourceId == nodeId ? edge.TargetId : edge.TargetId == nodeId ? edge.SourceId : null)
+        .Where(id => id is not null && id != ClusterRootId && id != NamespaceRootId)
+        .Distinct(StringComparer.Ordinal)
+        .Select(id => _graphNodeById.GetValueOrDefault(id!))
+        .Where(node => node is not null)
+        .Cast<KubernetesGraphNodeLayout>()
+        .OrderBy(node => node.Kind, StringComparer.OrdinalIgnoreCase)
+        .ThenBy(node => node.Name, StringComparer.OrdinalIgnoreCase)
+        .ToArray();
+
+    private string GetHighlightClass(string nodeId) => _selectedNodeId is null
+        ? string.Empty
+        : _highlightedNodeIds.Contains(nodeId) ? "related-highlight" : "related-muted";
+
+    private string GetHighlightClass(KubernetesGraphEdge edge) => _selectedNodeId is null
+        ? string.Empty
+        : _highlightedEdges.Contains(edge) ? "related-highlight" : "related-muted";
+
+    private static bool IsContextRelationship(string relationship) =>
+        relationship is "cluster-namespace" or "namespace" or "cluster-scope";
+
+    private static string GetResourceIcon(string kind) => kind switch
+    {
+        "Pod" => Icons.Material.Filled.Memory,
+        "Service" => Icons.Material.Filled.Hub,
+        "Deployment" or "ReplicaSet" or "StatefulSet" or "DaemonSet" => Icons.Material.Filled.Widgets,
+        "ConfigMap" or "Secret" => Icons.Material.Filled.Storage,
+        "Ingress" or "Gateway" => Icons.Material.Filled.Dns,
+        _ => Icons.Material.Filled.Inventory2
+    };
+
+    private static string GetStatusClass(string status) => status.Contains("False", StringComparison.OrdinalIgnoreCase)
+        || status.Contains("Failed", StringComparison.OrdinalIgnoreCase)
+        ? "status-error"
+        : status.Contains("True", StringComparison.OrdinalIgnoreCase)
+            || status.Equals("Running", StringComparison.OrdinalIgnoreCase)
+            || status.Contains("prontos", StringComparison.OrdinalIgnoreCase)
+            ? "status-ready"
+            : "status-pending";
+
+    private static string TruncateAnnotation(string value) => value.Length <= 160 ? value : value[..157] + "…";
+
+    private async Task ZoomIn() { _zoom = Math.Min(1.5, _zoom + 0.1); await PersistUiPreferencesAsync(); }
+    private async Task ZoomOut() { _zoom = Math.Max(0.6, _zoom - 0.1); await PersistUiPreferencesAsync(); }
+    private async Task ResetZoom() { _zoom = 1; await PersistUiPreferencesAsync(); }
+
+    private static void CancelLoad(CancellationTokenSource? load)
+    {
+        try { load?.Cancel(); }
+        catch (ObjectDisposedException) { }
+    }
+
+    private void OnSelectionChanged(KubernetesSelectionChangedEventArgs selection) => _ = InvokeAsync(async () =>
+    {
+        if (selection.Revision <= _lastSelectionRevision) return;
+        _lastSelectionRevision = selection.Revision;
+        if (string.IsNullOrWhiteSpace(ClusterService.CurrentNamespace))
+        {
+            var previousLoad = _loadCts;
+            _loadCts = null;
+            CancelLoad(previousLoad);
+            _graphNodes = [];
+            _edges = [];
+            _graphNodeById = new Dictionary<string, KubernetesGraphNodeLayout>();
+            _items = [];
+            _loading = false;
+        }
+        else await LoadTreeAsync();
+        StateHasChanged();
+    });
+
+    public async ValueTask DisposeAsync()
+    {
+        ClusterService.SelectionChanged -= OnSelectionChanged;
+        CancelLoad(_loadCts);
+        _loadCts?.Dispose();
+        if (_graphUiInitialized)
+        {
+            try { await JS.InvokeVoidAsync("kvGraph.dispose", _graphCanvas); }
+            catch (JSDisconnectedException) { }
+        }
+        _selfReference?.Dispose();
+    }
+}

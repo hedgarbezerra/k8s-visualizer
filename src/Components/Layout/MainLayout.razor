@@ -1,0 +1,136 @@
+@inherits LayoutComponentBase
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+@inject IStringLocalizer<AppStrings> L
+@inject ApplicationCultureService CultureService
+
+<MudThemeProvider Theme="@_theme" IsDarkMode="@_isDarkMode" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="0" Class="app-bar">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
+                       aria-label="@L["OpenCloseNavigation"]" OnClick="ToggleDrawer" />
+        <MudText Typo="Typo.h6" Class="brand-title">Kubernetes Visualizer</MudText>
+        <MudSpacer />
+        <ThemeSelector IsDarkMode="@_isDarkMode" ValueChanged="OnThemeChanged" />
+    </MudAppBar>
+
+    <MudDrawer @bind-Open="_drawerOpen" Variant="DrawerVariant.Responsive" Elevation="1" Class="app-drawer">
+        <div class="drawer-content">
+            <MudNavMenu>
+                <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">@L["Overview"]</MudNavLink>
+                <MudNavLink Href="/resources" Icon="@Icons.Material.Filled.AccountTree">@L["Resources"]</MudNavLink>
+                <MudNavLink Href="/wiki" Icon="@Icons.Material.Filled.MenuBook">@L["WikiSupport"]</MudNavLink>
+                <MudNavLink Href="/settings" Icon="@Icons.Material.Filled.Settings">@L["Settings"]</MudNavLink>
+            </MudNavMenu>
+            <div class="drawer-connection-selectors">
+                <ClusterSidebarSelector />
+            </div>
+        </div>
+    </MudDrawer>
+
+    <MudMainContent Class="main-content">
+        <MudContainer MaxWidth="MaxWidth.False" Class="page-container">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private bool _drawerOpen = true;
+    private bool _isDarkMode;
+    private ThemePreference _themePreference = ThemePreference.System;
+    private DotNetObjectReference<MainLayout>? _selfReference;
+
+    protected override void OnInitialized() => CultureService.CultureChanged += OnCultureChanged;
+
+    private void OnCultureChanged(ApplicationCultureChangedEventArgs change) => _ = InvokeAsync(StateHasChanged);
+
+    private readonly MudTheme _theme = new()
+    {
+        PaletteLight = new PaletteLight
+        {
+            Primary = "#8336E0",
+            Secondary = "#5E35B1",
+            Background = "#F7F7FA",
+            Surface = "#FFFFFF"
+        },
+        PaletteDark = new PaletteDark
+        {
+            Primary = "#8336E0",
+            Secondary = "#B39DDB",
+            Background = "#121218",
+            Surface = "#1D1D26"
+        }
+    };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        var savedPreference = await JS.InvokeAsync<string>("kvTheme.getPreference");
+        if (Enum.TryParse<ThemePreference>(savedPreference, ignoreCase: true, out var preference))
+        {
+            _themePreference = preference;
+        }
+
+        _isDarkMode = _themePreference switch
+        {
+            ThemePreference.Dark => true,
+            ThemePreference.Light => false,
+            _ => await JS.InvokeAsync<bool>("kvTheme.isSystemDark")
+        };
+
+        _selfReference = DotNetObjectReference.Create(this);
+        await JS.InvokeVoidAsync("kvTheme.subscribeSystem", _selfReference);
+        var savedDrawerState = await JS.InvokeAsync<bool?>("kvUiState.read", "shell");
+        if (savedDrawerState.HasValue) _drawerOpen = savedDrawerState.Value;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ToggleDrawer()
+    {
+        _drawerOpen = !_drawerOpen;
+        await JS.InvokeVoidAsync("kvUiState.write", "shell", _drawerOpen);
+    }
+
+    private async Task OnThemeChanged(ThemePreference preference)
+    {
+        _themePreference = preference;
+        await JS.InvokeVoidAsync("kvTheme.setPreference", preference.ToString());
+        _isDarkMode = preference switch
+        {
+            ThemePreference.Dark => true,
+            ThemePreference.Light => false,
+            _ => await JS.InvokeAsync<bool>("kvTheme.isSystemDark")
+        };
+    }
+
+    [JSInvokable]
+    public Task OnSystemThemeChanged(bool isDark)
+    {
+        if (_themePreference == ThemePreference.System)
+        {
+            _isDarkMode = isDark;
+            return InvokeAsync(StateHasChanged);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        CultureService.CultureChanged -= OnCultureChanged;
+        if (_selfReference is not null)
+        {
+            await JS.InvokeVoidAsync("kvTheme.unsubscribeSystem");
+            _selfReference.Dispose();
+        }
+    }
+}

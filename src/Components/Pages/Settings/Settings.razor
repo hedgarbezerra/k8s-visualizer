@@ -1,0 +1,135 @@
+@page "/settings"
+@implements IDisposable
+@inject KubernetesClusterService ClusterService
+@inject KubernetesConnectionProfileStore ProfileStore
+@inject NavigationManager Navigation
+@inject IStringLocalizer<AppStrings> L
+@inject ApplicationCultureService CultureService
+
+<PageTitle>@L["Settings"] | Kubernetes Visualizer</PageTitle>
+
+<MudStack Spacing="4">
+    <div>
+        <MudText Typo="Typo.h4" GutterBottom="true">@L["Settings"]</MudText>
+        <MudText Typo="Typo.body1" Color="Color.Secondary">@L["SettingsDescription"]</MudText>
+    </div>
+
+    <MudPaper Class="pa-4" Elevation="1">
+        <MudText Typo="Typo.h6" GutterBottom="true">@L["Language"]</MudText>
+        <MudSelect T="string" Label="@L["Language"]" Value="@CultureInfo.CurrentUICulture.Name" ValueChanged="OnLanguageChanged"
+                   Variant="Variant.Outlined" Dense="true" Style="max-width:320px">
+            <MudSelectItem Value="@("pt-BR")">@L["Portuguese"]</MudSelectItem>
+            <MudSelectItem Value="@("en")">@L["English"]</MudSelectItem>
+        </MudSelect>
+    </MudPaper>
+
+    <MudPaper Class="pa-4" Elevation="1">
+        <MudText Typo="Typo.h6" GutterBottom="true">@L["AddConnection"]</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+            @L["ConnectionStorageDescription"]
+        </MudText>
+        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-3">@L["LocalDatabase", ProfileStore.DatabasePath]</MudText>
+        <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Wrap="Wrap.Wrap">
+            <MudTextField T="string" Label="@L["ConnectionName"]" @bind-Value="_name" Variant="Variant.Outlined" />
+            <MudTextField T="string" Label="@L["KubeconfigPath"]" @bind-Value="_path" Variant="Variant.Outlined" Style="min-width:320px" />
+            <MudButton Variant="Variant.Outlined" OnClick="FindContextsAsync" Disabled="ClusterService.IsLoading">@L["LoadContexts"]</MudButton>
+        </MudStack>
+        @if (ClusterService.AvailableContexts.Count > 0)
+        {
+            <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="mt-3" Wrap="Wrap.Wrap">
+                <MudSelect T="string" Label="@L["Context"]" @bind-Value="_contextName" Variant="Variant.Outlined" Style="min-width:240px">
+                    @foreach (var context in ClusterService.AvailableContexts)
+                    {
+                        <MudSelectItem Value="@context.Name">@context.Name — @context.Server</MudSelectItem>
+                    }
+                </MudSelect>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="AddConnectionAsync"
+                           Disabled="string.IsNullOrWhiteSpace(_name) || string.IsNullOrWhiteSpace(_contextName)">@L["SaveConnection"]</MudButton>
+            </MudStack>
+        }
+        @if (!string.IsNullOrWhiteSpace(ClusterService.Error))
+        {
+            <MudAlert Severity="Severity.Error" Dense="true" Class="mt-3">@ClusterService.Error</MudAlert>
+        }
+    </MudPaper>
+
+    <MudPaper Class="pa-4" Elevation="1">
+        <MudText Typo="Typo.h6" GutterBottom="true">@L["ConfiguredConnections", ClusterService.Profiles.Count]</MudText>
+        @if (ClusterService.Profiles.Count == 0)
+        {
+            <MudText Typo="Typo.body2" Color="Color.Secondary">@L["NoConnectionsYet"]</MudText>
+        }
+        else
+        {
+            <MudStack Spacing="2">
+                @foreach (var profile in ClusterService.Profiles)
+                {
+                    <MudPaper Outlined="true" Class="pa-3">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Wrap="Wrap.Wrap">
+                            <div class="flex-grow-1">
+                                <MudText Typo="Typo.subtitle1">@profile.Name</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">@L["ContextLabel", profile.ContextName]</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@profile.KubeconfigPath</MudText>
+                            </div>
+                            @if (ClusterService.IsProfileConnected(profile.Id))
+                            {
+                                <MudChip T="string" Color="Color.Success" Icon="@Icons.Material.Filled.CloudDone">@L["Connected"]</MudChip>
+                                <MudButton Variant="Variant.Outlined" OnClick="@(() => DisconnectAsync(profile.Id))">@L["Disconnect"]</MudButton>
+                            }
+                            else
+                            {
+                                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@(() => ConnectAsync(profile.Id))" Disabled="ClusterService.IsLoading">@L["Connect"]</MudButton>
+                            }
+                            <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline" Color="Color.Error" aria-label="@L["RemoveConnection"]"
+                                           OnClick="@(() => RemoveAsync(profile.Id))" />
+                        </MudStack>
+                    </MudPaper>
+                }
+            </MudStack>
+        }
+    </MudPaper>
+
+    <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined">
+        @L["RbacWarning"]
+    </MudAlert>
+</MudStack>
+
+@code {
+    private string _name = string.Empty;
+    private string _path = string.Empty;
+    private string? _contextName;
+
+    private void OnLanguageChanged(string? culture)
+    {
+        if (culture is not ("pt-BR" or "en")) return;
+        CultureService.NotifyCultureChanged(culture);
+        Navigation.NavigateTo($"/culture/set?culture={Uri.EscapeDataString(culture)}&returnUrl={Uri.EscapeDataString("/settings")}", forceLoad: true);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        ClusterService.Changed += OnServiceChanged;
+        _path = KubernetesClusterService.ResolvePath(null);
+        await ClusterService.EnsureProfilesLoadedAsync();
+    }
+
+    private async Task FindContextsAsync()
+    {
+        await ClusterService.LoadContextsFromPathAsync(_path);
+        _contextName = ClusterService.AvailableContexts.FirstOrDefault(context => context.IsCurrent)?.Name
+                       ?? ClusterService.AvailableContexts.FirstOrDefault()?.Name;
+    }
+
+    private async Task AddConnectionAsync()
+    {
+        if (_contextName is null) return;
+        await ClusterService.AddProfileAsync(_name, _path, _contextName);
+        _name = string.Empty;
+    }
+
+    private Task ConnectAsync(string id) => ClusterService.ConnectAsync(id);
+    private Task DisconnectAsync(string id) => ClusterService.DisconnectAsync(id);
+    private Task RemoveAsync(string id) => ClusterService.RemoveProfileAsync(id);
+    private void OnServiceChanged() => _ = InvokeAsync(StateHasChanged);
+    public void Dispose() => ClusterService.Changed -= OnServiceChanged;
+}

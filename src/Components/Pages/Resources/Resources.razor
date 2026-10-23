@@ -1,0 +1,462 @@
+@page "/resources"
+@implements IDisposable
+@inject KubernetesClusterService ClusterService
+@inject IStringLocalizer<AppStrings> L
+@inject IJSRuntime JS
+
+<PageTitle>@L["Resources"] | Kubernetes Visualizer</PageTitle>
+
+<MudStack Spacing="4">
+    <div>
+        <MudText Typo="Typo.h4" GutterBottom="true">@L["Resources"]</MudText>
+        <MudText Typo="Typo.body1" Color="Color.Secondary">@L["ResourcesDescription"]</MudText>
+    </div>
+
+    @if (!ClusterService.IsConnected)
+    {
+        <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">@L["ConnectFromSettings"]</MudAlert>
+    }
+    else
+    {
+        <MudPaper Class="pa-4" Elevation="1">
+            <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Wrap="Wrap.Wrap">
+                <MudSelect T="string" Label="@L["ResourceType"]" Value="@_selectedKey" ValueChanged="OnTypeChanged"
+                           Variant="Variant.Outlined" Dense="true" Style="min-width:280px" Disabled="_loadingTypes">
+                    <MudSelectItem Value="@AllResourcesKey">@L["AllResources"]</MudSelectItem>
+                    @foreach (var type in _types)
+                    {
+                        <MudSelectItem Value="@ResourceKey(type)">@type.Kind (@type.Name)</MudSelectItem>
+                    }
+                </MudSelect>
+                <MudTextField T="string" Label="@L["FilterNameNamespace"]" Value="@_filter" ValueChanged="OnFilterChanged" Immediate="true"
+                              Variant="Variant.Outlined" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" />
+                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Refresh" OnClick="RefreshSelectedAsync"
+                           Disabled="_loadingTypes || _loadingItems">@L["Refresh"]</MudButton>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">@L["ObjectCount", FilteredItems.Count]</MudText>
+            </MudStack>
+            <MudStack Row="true" AlignItems="AlignItems.Center" Wrap="Wrap.Wrap" Spacing="3" Class="mt-3">
+                <MudSwitch T="bool" Value="_hideKubernetesSystemResources" ValueChanged="SetHideSystemResourcesAsync" Color="Color.Primary">@L["HideKubernetesSystemResources"]</MudSwitch>
+                <MudSwitch T="bool" Value="_hideControllerManagedResources" ValueChanged="SetHideControllerManagedResourcesAsync" Color="Color.Primary">@L["HideControllerManagedResources"]</MudSwitch>
+                <MudSwitch T="bool" Value="_hideStandaloneResources" ValueChanged="SetHideStandaloneResourcesAsync" Color="Color.Primary">@L["HideStandaloneResources"]</MudSwitch>
+            </MudStack>
+            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-1">@L["ResourceOriginFilterNote"]</MudText>
+            @if (_loadingTypes || _loadingItems)
+            {
+                <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mt-3" />
+            }
+        </MudPaper>
+
+        @if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <MudAlert Severity="Severity.Error" Variant="Variant.Outlined">@_error</MudAlert>
+        }
+        @if (_partialFailures.Count > 0)
+        {
+            <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined" Dense="true">
+                @L["SomeResourceTypesUnavailable", _partialFailures.Count]
+                <MudTooltip Text="@string.Join(", ", _partialFailures)"><MudIcon Icon="@Icons.Material.Filled.Info" Class="ml-2" /></MudTooltip>
+            </MudAlert>
+        }
+        @if (_selectedType is not null || _showAllResources)
+        {
+            <MudTable Items="FilteredItems" Hover="true" Dense="true" Striped="true" Elevation="1" OnRowClick="@(EventCallback.Factory.Create<TableRowClickEventArgs<KubernetesResourceItem>>(this, OnResourceRowClick))" Class="resource-table">
+                <HeaderContent>
+                    <MudTh>@L["Kind"]</MudTh>
+                    <MudTh>@L["Name"]</MudTh>
+                    <MudTh>@L["Namespace"]</MudTh>
+                    <MudTh>@L["Status"]</MudTh>
+                    <MudTh>@L["Api"]</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="@L["Kind"]">@context.Kind</MudTd>
+                    <MudTd DataLabel="@L["Name"]">@context.Name</MudTd>
+                    <MudTd DataLabel="@L["Namespace"]">@(string.IsNullOrWhiteSpace(context.Namespace) ? "—" : context.Namespace)</MudTd>
+                    <MudTd DataLabel="@L["Status"]">@(string.IsNullOrWhiteSpace(context.Status) ? "—" : context.Status)</MudTd>
+                    <MudTd DataLabel="@L["Api"]">@context.GroupVersion</MudTd>
+                </RowTemplate>
+                <NoRecordsContent>
+                    <MudText Class="pa-4" Color="Color.Secondary">@L["NoObjectsForFilter"]</MudText>
+                </NoRecordsContent>
+            </MudTable>
+            @if (_selectedType?.Kind == "Secret" || (_showAllResources && _items.Any(item => item.Kind == "Secret")))
+            {
+                <MudAlert Severity="Severity.Info" Dense="true" Class="mt-3">@L["SecretsMetadataOnly"]</MudAlert>
+            }
+        }
+
+        @if (_detailsOpen && _selectedResource is not null)
+        {
+            <div class="resource-details-backdrop" @onclick="CloseDetails"></div>
+            <aside class="resource-details-drawer" role="dialog" aria-modal="true" aria-labelledby="resource-list-details-title" tabindex="-1">
+                <MudStack Spacing="3">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                        <div>
+                            <MudText Typo="Typo.overline" Color="Color.Primary">@_selectedResource.Kind · @_selectedResource.GroupVersion</MudText>
+                            <MudText id="resource-list-details-title" Typo="Typo.h6">@_selectedResource.Name</MudText>
+                        </div>
+                        <MudIconButton Icon="@Icons.Material.Filled.Close" Color="Color.Default" title="@L["Close"]" OnClick="CloseDetails" />
+                    </MudStack>
+                    <MudText Typo="Typo.body2">@L["Namespace"]: @(string.IsNullOrWhiteSpace(_selectedResource.Namespace) ? L["ClusterScope"] : _selectedResource.Namespace)</MudText>
+                    @if (!string.IsNullOrWhiteSpace(_selectedResource.Status))
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined">@_selectedResource.Status</MudChip>
+                    }
+                    @if (_showYaml && _selectedResource.Kind == "Secret")
+                    {
+                        <MudAlert Severity="Severity.Info" Dense="true">@L["SecretYamlRedacted"]</MudAlert>
+                    }
+                    @if (_showYaml)
+                    {
+                        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Info" OnClick="ToggleYamlAsync">@L["ShowDetails"]</MudButton>
+                        @if (_yamlLoading)
+                        {
+                            <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+                        }
+                        else if (!string.IsNullOrWhiteSpace(_selectedYaml))
+                        {
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="yaml-reader-toolbar">
+                                <MudText Typo="Typo.subtitle2">@L["ObservedYaml"]</MudText>
+                                <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ContentCopy" OnClick="CopyYamlAsync">@(_yamlCopied ? L["YamlCopied"] : L["CopyYaml"])</MudButton>
+                            </MudStack>
+                            @if (_yamlCopyFailed)
+                            {
+                                <MudAlert Severity="Severity.Warning" Dense="true">@L["ClipboardUnavailable"]</MudAlert>
+                            }
+                            <pre class="resource-yaml-view">@_selectedYaml</pre>
+                        }
+                    }
+                    else
+                    {
+                        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Code" OnClick="ToggleYamlAsync">@L["ViewAsYaml"]</MudButton>
+                        @if ((_selectedResource.Labels?.Count ?? 0) > 0)
+                        {
+                            <MudDivider />
+                            <MudText Typo="Typo.subtitle2">@L["Labels"]</MudText>
+                            <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="1">
+                                @foreach (var label in _selectedResource.Labels!)
+                                {
+                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@label.Key=@label.Value</MudChip>
+                                }
+                            </MudStack>
+                        }
+                        @if ((_selectedResource.Annotations?.Count ?? 0) > 0)
+                        {
+                            <MudDivider />
+                            <MudText Typo="Typo.subtitle2">@L["Annotations"]</MudText>
+                            <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="1">
+                                @foreach (var annotation in _selectedResource.Annotations!)
+                                {
+                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@annotation.Key=@TruncateAnnotation(annotation.Value)</MudChip>
+                                }
+                            </MudStack>
+                        }
+                    }
+                </MudStack>
+            </aside>
+        }
+    }
+</MudStack>
+
+@code {
+    private IReadOnlyList<KubernetesResourceType> _types = [];
+    private IReadOnlyList<KubernetesResourceItem> _items = [];
+    private KubernetesResourceType? _selectedType;
+    private string? _selectedKey;
+    private const string AllResourcesKey = "__all_resources__";
+    private bool _showAllResources;
+    private string _filter = string.Empty;
+    private string? _error;
+    private IReadOnlyList<string> _partialFailures = [];
+    private bool _loadingTypes;
+    private bool _loadingItems;
+    private bool _preferencesRestored;
+    private bool _hideKubernetesSystemResources;
+    private bool _hideControllerManagedResources;
+    private bool _hideStandaloneResources;
+    private bool _detailsOpen;
+    private bool _showYaml;
+    private bool _yamlLoading;
+    private bool _yamlCopied;
+    private bool _yamlCopyFailed;
+    private string? _selectedYaml;
+    private KubernetesResourceItem? _selectedResource;
+    private CancellationTokenSource? _resourceLoad;
+    private long _lastSelectionRevision;
+    private IReadOnlyList<KubernetesResourceItem> FilteredItems => _items.Where(item =>
+        (!_hideKubernetesSystemResources || !item.IsKubernetesSystemManaged)
+        && (!_hideControllerManagedResources || !item.IsControllerManaged)
+        && (!_hideStandaloneResources || item.IsKubernetesSystemManaged || item.IsControllerManaged)
+        && (string.IsNullOrWhiteSpace(_filter) || item.Name.Contains(_filter, StringComparison.OrdinalIgnoreCase)
+        || item.Namespace.Contains(_filter, StringComparison.OrdinalIgnoreCase))).ToArray();
+
+    protected override void OnInitialized() => ClusterService.SelectionChanged += OnSelectionChanged;
+
+    protected override async Task OnInitializedAsync() => await RefreshCatalogAsync();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _preferencesRestored) return;
+        _preferencesRestored = true;
+        try
+        {
+            var preferences = await JS.InvokeAsync<ResourceListUiPreferences?>("kvUiState.read", "resources");
+            if (preferences is not null)
+            {
+                _selectedKey = preferences.SelectedResourceKey;
+                _filter = preferences.Search ?? string.Empty;
+                _hideKubernetesSystemResources = preferences.HideKubernetesSystemResources;
+                _hideControllerManagedResources = preferences.HideControllerManagedResources;
+                _hideStandaloneResources = preferences.HideStandaloneResources;
+                if (ClusterService.IsConnected) await RefreshCatalogAsync();
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (JSException) { }
+    }
+
+    private async Task RefreshCatalogAsync()
+    {
+        if (!ClusterService.IsConnected || ClusterService.IsLoading) return;
+        _loadingTypes = true;
+        _error = null;
+        try
+        {
+            _types = await ClusterService.GetResourceTypesAsync();
+            _showAllResources = _selectedKey == AllResourcesKey;
+            _selectedType = _showAllResources ? null : _types.FirstOrDefault(item => ResourceKey(item) == _selectedKey)
+                ?? _types.FirstOrDefault(item => item.Kind == "Pod") ?? _types.FirstOrDefault();
+            _selectedKey = _showAllResources ? AllResourcesKey : _selectedType is null ? null : ResourceKey(_selectedType);
+            if (_showAllResources) await LoadAllResourcesAsync();
+            else await LoadSelectedResourcesAsync();
+        }
+        catch (Exception exception)
+        {
+            _error = $"{L["CouldNotLoadDiscovery"]}: {exception.Message}";
+        }
+        finally { _loadingTypes = false; }
+    }
+
+    private async Task OnTypeChanged(string? key)
+    {
+        _selectedKey = key;
+        _showAllResources = key == AllResourcesKey;
+        if (_showAllResources)
+        {
+            _selectedType = null;
+            await LoadAllResourcesAsync();
+            await PersistUiPreferencesAsync();
+            return;
+        }
+
+        _selectedType = _types.FirstOrDefault(item => ResourceKey(item) == key);
+        await LoadSelectedResourcesAsync();
+        await PersistUiPreferencesAsync();
+    }
+
+    private async Task OnFilterChanged(string? value)
+    {
+        _filter = value ?? string.Empty;
+        await PersistUiPreferencesAsync();
+    }
+
+    private async Task SetHideSystemResourcesAsync(bool value)
+    {
+        _hideKubernetesSystemResources = value;
+        await PersistUiPreferencesAsync();
+    }
+
+    private async Task SetHideControllerManagedResourcesAsync(bool value)
+    {
+        _hideControllerManagedResources = value;
+        await PersistUiPreferencesAsync();
+    }
+
+    private async Task SetHideStandaloneResourcesAsync(bool value)
+    {
+        _hideStandaloneResources = value;
+        await PersistUiPreferencesAsync();
+    }
+
+    private Task PersistUiPreferencesAsync() => JS.InvokeVoidAsync("kvUiState.write", "resources",
+        new ResourceListUiPreferences(_selectedKey, _filter, _hideKubernetesSystemResources,
+            _hideControllerManagedResources, _hideStandaloneResources)).AsTask();
+
+    private void SelectResource(KubernetesResourceItem resource)
+    {
+        _selectedResource = resource;
+        _detailsOpen = true;
+        _showYaml = false;
+        _selectedYaml = null;
+        _yamlCopied = false;
+        _yamlCopyFailed = false;
+    }
+
+    private Task OnResourceRowClick(TableRowClickEventArgs<KubernetesResourceItem> args)
+    {
+        if (args.Item is not null) SelectResource(args.Item);
+        return Task.CompletedTask;
+    }
+
+    private void CloseDetails()
+    {
+        _detailsOpen = false;
+        _selectedResource = null;
+        _showYaml = false;
+        _selectedYaml = null;
+        _yamlCopied = false;
+        _yamlCopyFailed = false;
+    }
+
+    private async Task ToggleYamlAsync()
+    {
+        if (_showYaml)
+        {
+            _showYaml = false;
+            return;
+        }
+        if (_selectedResource is null) return;
+        _showYaml = true;
+        _yamlLoading = true;
+        _selectedYaml = null;
+        _yamlCopied = false;
+        _yamlCopyFailed = false;
+        try
+        {
+            _selectedYaml = await ClusterService.GetResourceYamlAsync(_selectedResource.GroupVersion,
+                _selectedResource.ResourceName, _selectedResource.Kind, _selectedResource.Name, _selectedResource.Namespace);
+        }
+        catch (Exception exception)
+        {
+            _selectedYaml = $"{L["CouldNotLoadYaml"]}: {exception.Message}";
+        }
+        finally { _yamlLoading = false; }
+    }
+
+    private async Task CopyYamlAsync()
+    {
+        _yamlCopyFailed = !await JS.InvokeAsync<bool>("kvClipboard.copy", _selectedYaml ?? string.Empty);
+        _yamlCopied = !_yamlCopyFailed;
+    }
+
+    private static string TruncateAnnotation(string value) => value.Length <= 160 ? value : value[..157] + "…";
+
+    private Task RefreshSelectedAsync() => _showAllResources ? LoadAllResourcesAsync() : LoadSelectedResourcesAsync();
+
+    private async Task LoadSelectedResourcesAsync()
+    {
+        if (!ClusterService.IsConnected || _selectedType is null) return;
+        var load = BeginResourceLoad();
+        _loadingItems = true;
+        _error = null;
+        _items = [];
+        _partialFailures = [];
+        StateHasChanged();
+        try { _items = await ClusterService.ListResourcesAsync(_selectedType, ClusterService.CurrentNamespace, load.Token); }
+        catch (OperationCanceledException) when (load.IsCancellationRequested) { }
+        catch (Exception exception) { _items = []; _error = $"{L["CouldNotListResource", _selectedType.Kind]}: {exception.Message}"; }
+        finally { FinishResourceLoad(load); }
+    }
+
+    private async Task LoadAllResourcesAsync()
+    {
+        if (!ClusterService.IsConnected) return;
+        var load = BeginResourceLoad();
+        _loadingItems = true;
+        _error = null;
+        _items = [];
+        _partialFailures = [];
+        var items = new System.Collections.Concurrent.ConcurrentBag<KubernetesResourceItem>();
+        var failures = new System.Collections.Concurrent.ConcurrentBag<string>();
+        var namespaceName = ClusterService.CurrentNamespace;
+        StateHasChanged();
+        try
+        {
+            await Parallel.ForEachAsync(_types,
+                new ParallelOptions { MaxDegreeOfParallelism = 6, CancellationToken = load.Token },
+                async (type, cancellationToken) =>
+                {
+                    try
+                    {
+                        var listed = await ClusterService.ListResourcesAsync(type, namespaceName, cancellationToken);
+                        foreach (var item in listed) items.Add(item);
+                    }
+                    catch (Exception exception) when (exception is not OperationCanceledException)
+                    {
+                        failures.Add(type.Kind);
+                    }
+                });
+            _items = items.OrderBy(item => item.Kind, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(item => item.Namespace, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(item => item.Name, StringComparer.OrdinalIgnoreCase).ToArray();
+            _partialFailures = failures.Order(StringComparer.OrdinalIgnoreCase).ToArray();
+        }
+        catch (OperationCanceledException) when (load.IsCancellationRequested) { }
+        catch (Exception exception)
+        {
+            _items = [];
+            _error = $"{L["CouldNotListAllResources"]}: {exception.Message}";
+        }
+        finally { FinishResourceLoad(load); }
+    }
+
+    private CancellationTokenSource BeginResourceLoad()
+    {
+        _resourceLoad?.Cancel();
+        return _resourceLoad = new CancellationTokenSource();
+    }
+
+    private void FinishResourceLoad(CancellationTokenSource load)
+    {
+        if (ReferenceEquals(_resourceLoad, load))
+        {
+            _resourceLoad = null;
+            _loadingItems = false;
+        }
+        load.Dispose();
+    }
+
+    private static string ResourceKey(KubernetesResourceType type) => $"{type.GroupVersion}:{type.Name}";
+
+    private void OnSelectionChanged(KubernetesSelectionChangedEventArgs selection) => _ = InvokeAsync(async () =>
+    {
+        if (selection.Revision <= _lastSelectionRevision) return;
+        _lastSelectionRevision = selection.Revision;
+        if (ClusterService.IsLoading) return;
+
+        if (!ClusterService.IsConnected)
+        {
+            CloseDetails();
+            _types = [];
+            _items = [];
+            _selectedType = null;
+            _selectedKey = null;
+            _error = null;
+            StateHasChanged();
+            return;
+        }
+
+        if (selection.Kind == KubernetesSelectionChangeKind.Namespace)
+        {
+            CloseDetails();
+            if (_showAllResources) await LoadAllResourcesAsync();
+            else await LoadSelectedResourcesAsync();
+        }
+        else
+        {
+            CloseDetails();
+            await RefreshCatalogAsync();
+        }
+
+        // This handler is invoked by a service event, outside Blazor's normal
+        // component event pipeline, so completing the async load does not
+        // automatically schedule a render.
+        StateHasChanged();
+    });
+
+    public void Dispose()
+    {
+        ClusterService.SelectionChanged -= OnSelectionChanged;
+        _resourceLoad?.Cancel();
+        _resourceLoad?.Dispose();
+    }
+}

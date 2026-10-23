@@ -1,0 +1,24 @@
+<MudTooltip Text="@ActionLabel">
+    <MudIconButton Icon="@ActionIcon"
+                   Color="Color.Inherit"
+                   Size="Size.Medium"
+                   aria-label="@ActionLabel"
+                   OnClick="ToggleTheme" />
+</MudTooltip>
+
+@code {
+    [Inject] private IStringLocalizer<AppStrings> L { get; set; } = default!;
+    [Parameter] public bool IsDarkMode { get; set; }
+    [Parameter] public EventCallback<ThemePreference> ValueChanged { get; set; }
+
+    private string ActionIcon => IsDarkMode
+        ? Icons.Material.Filled.LightMode
+        : Icons.Material.Filled.DarkMode;
+
+    private string ActionLabel => IsDarkMode
+        ? L["ThemeLight"].Value
+        : L["ThemeDark"].Value;
+
+    private Task ToggleTheme() => ValueChanged.InvokeAsync(
+        IsDarkMode ? ThemePreference.Light : ThemePreference.Dark);
+}
