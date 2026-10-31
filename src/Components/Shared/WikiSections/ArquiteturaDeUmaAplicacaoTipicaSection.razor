@@ -1,0 +1,52 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("ArquiteturaDeUmaAplicacaoTipica.Block01"),
+        new WikiDiagramItem("""
+flowchart TD
+    Internet --> Gateway
+    Gateway --> APIService
+    APIService --> APIPods
+    APIPods --> ConfigMap
+    APIPods --> Secret
+    APIPods --> PVC
+    HPA --> Deployment
+    Deployment --> APIPods
+    APIPods --> DatabaseService
+    DatabaseService --> DatabasePods
+    DatabasePods --> DatabasePVC
+"""),
+        new WikiParagraphBlock("ArquiteturaDeUmaAplicacaoTipica.Block03"),
+        new WikiCodeItem("text", """
+Cluster
+│
+├── Namespace: application
+│   │
+│   ├── Gateway / Ingress
+│   │
+│   ├── Service: API
+│   │   └── Deployment
+│   │       └── Pods
+│   │           └── .NET containers
+│   │
+│   ├── ConfigMap
+│   ├── Secret
+│   ├── HPA
+│   ├── PDB
+│   └── ServiceAccount
+│
+└── Namespace: database
+    │
+    ├── Service
+    ├── StatefulSet
+    │   └── PostgreSQL Pods
+    │
+    └── PVC
+""")
+    ];
+}

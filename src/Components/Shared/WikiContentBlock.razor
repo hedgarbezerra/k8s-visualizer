@@ -1,0 +1,55 @@
+@inject IStringLocalizer<WikiResources> L
+
+@foreach (var block in Blocks)
+{
+    @if (block is WikiParagraphBlock paragraph && !Missing(paragraph.TextKey))
+    {
+        <MudText Class="wiki-paragraph"><WikiLinkedText Text="@L[paragraph.TextKey].Value" /></MudText>
+    }
+    else if (block is WikiHeadingBlock heading && !Missing(heading.TextKey))
+    {
+        if (heading.Level == 3)
+        {
+            <MudText Typo="Typo.h5" Class="wiki-subheading"><WikiLinkedText Text="@L[heading.TextKey].Value" /></MudText>
+        }
+        else
+        {
+            <MudText Typo="Typo.h6" Class="wiki-subheading"><WikiLinkedText Text="@L[heading.TextKey].Value" /></MudText>
+        }
+    }
+    else if (block is WikiListItemBlock item && !Missing(item.TextKey))
+    {
+        <ul class="wiki-list"><li><WikiLinkedText Text="@L[item.TextKey].Value" /></li></ul>
+    }
+    else if (block is WikiQuoteBlock quote && !Missing(quote.TextKey))
+    {
+        <blockquote class="wiki-callout"><MudText><WikiLinkedText Text="@L[quote.TextKey].Value" /></MudText></blockquote>
+    }
+    else if (block is WikiCodeItem code)
+    {
+        <WikiCodeBlock Language="@(code.Language)" Code="@(code.Code)" />
+    }
+    else if (block is WikiDiagramItem diagram)
+    {
+        <WikiDiagramBlock Source="@(diagram.Source)" />
+    }
+    else if (block is WikiReferenceBlock reference)
+    {
+        <a href="@reference.Href" target="_blank" rel="noopener noreferrer" class="wiki-reference">@reference.Label</a>
+    }
+    else if (block is WikiInternalLinkBlock internalLink && !Missing(internalLink.LabelKey))
+    {
+        <a href="/wiki#@internalLink.Href" class="wiki-reference">@L[internalLink.LabelKey]</a>
+    }
+    else if (block is WikiComparisonItem comparison && !Missing(comparison.LeftTitleKey) && !Missing(comparison.LeftTextKey)
+             && !Missing(comparison.RightTitleKey) && !Missing(comparison.RightTextKey))
+    {
+        <WikiComparison LeftTitle="@L[comparison.LeftTitleKey]" LeftText="@L[comparison.LeftTextKey]"
+                        RightTitle="@L[comparison.RightTitleKey]" RightText="@L[comparison.RightTextKey]" />
+    }
+}
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<WikiBlock> Blocks { get; set; } = Array.Empty<WikiBlock>();
+    private bool Missing(string key) => L[key].ResourceNotFound;
+}

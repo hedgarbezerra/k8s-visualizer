@@ -1,0 +1,11 @@
+<MudGrid Class="wiki-comparison" Spacing="2">
+    <MudItem xs="12" md="6"><MudPaper Outlined="true" Class="pa-4"><MudText Typo="Typo.h6"><WikiLinkedText Text="@LeftTitle" /></MudText><MudText><WikiLinkedText Text="@LeftText" /></MudText></MudPaper></MudItem>
+    <MudItem xs="12" md="6"><MudPaper Outlined="true" Class="pa-4"><MudText Typo="Typo.h6"><WikiLinkedText Text="@RightTitle" /></MudText><MudText><WikiLinkedText Text="@RightText" /></MudText></MudPaper></MudItem>
+</MudGrid>
+
+@code {
+    [Parameter] public string LeftTitle { get; set; } = string.Empty;
+    [Parameter] public string LeftText { get; set; } = string.Empty;
+    [Parameter] public string RightTitle { get; set; } = string.Empty;
+    [Parameter] public string RightText { get; set; } = string.Empty;
+}

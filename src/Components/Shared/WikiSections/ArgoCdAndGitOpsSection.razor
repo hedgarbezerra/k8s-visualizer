@@ -1,0 +1,23 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("ArgoCdEGitops.Block01"),
+        new WikiDiagramItem("""
+flowchart LR
+    G[Git] --> A[Argo CD]
+    A --> K[Kubernetes Cluster]
+"""),
+        new WikiParagraphBlock("ArgoCdEGitops.Block03"),
+        new WikiCodeItem("text", """
+Git state
+    vs
+Cluster state
+"""),
+        new WikiParagraphBlock("ArgoCdEGitops.Block05")
+    ];
+}

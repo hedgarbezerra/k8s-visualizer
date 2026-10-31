@@ -1,0 +1,41 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("Replicaset.Block01"),
+        new WikiCodeItem("text", """
+Deployment
+    |
+    v
+ReplicaSet
+    |
+    +-- Pod
+    +-- Pod
+    +-- Pod
+"""),
+        new WikiParagraphBlock("Replicaset.Block03"),
+        new WikiCodeItem("yaml", """
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      containers:
+        - name: api
+          image: nginx:1.27
+""")
+    ];
+}

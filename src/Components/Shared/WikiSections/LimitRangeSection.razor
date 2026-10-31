@@ -1,0 +1,37 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("Limitrange.Block01"),
+        new WikiListItemBlock("Limitrange.Block02"),
+        new WikiListItemBlock("Limitrange.Block03"),
+        new WikiListItemBlock("Limitrange.Block04"),
+        new WikiListItemBlock("Limitrange.Block05"),
+        new WikiCodeItem("text", """
+ResourceQuota
+    -> limite total do Namespace
+LimitRange
+    -> regras por recurso/Pod/container
+"""),
+        new WikiCodeItem("yaml", """
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: container-defaults
+  namespace: demo
+spec:
+  limits:
+    - type: Container
+      defaultRequest:
+        cpu: 100m
+        memory: 128Mi
+      default:
+        cpu: 500m
+        memory: 512Mi
+""")
+    ];
+}

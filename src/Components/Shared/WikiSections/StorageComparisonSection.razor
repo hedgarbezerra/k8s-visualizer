@@ -1,0 +1,24 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("Practical.PvcPvStorageclass.Block01"),
+        new WikiCodeItem("yaml", """
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: { name: app-data }
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests: { storage: 5Gi }
+"""),
+        new WikiParagraphBlock("Practical.PvcPvStorageclass.Block03"),
+        new WikiReferenceBlock("https://kubernetes.io/docs/concepts/storage/persistent-volumes/", "Persistent Volumes"),
+        new WikiReferenceBlock("https://kubernetes.io/docs/concepts/storage/storage-classes/", "StorageClass"),
+        new WikiReferenceBlock("https://kubernetes.io/docs/concepts/storage/dynamic-provisioning/", "provisionamento dinâmico")
+    ];
+}

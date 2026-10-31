@@ -385,7 +385,7 @@ Esta checklist acompanha o plano; não substitui as explicações, decisões ou 
 - [x] Carregar namespaces após conexão e permitir selecionar namespace ou “todos”; se RBAC negar a listagem, manter conexão e informar o usuário.
 - [x] Limpar seleção e estado visível ao trocar a conexão ativa; manter clientes isolados por perfil dentro da sessão.
 - [x] Emitir evento global versionado em mudança de conexão ativa/namespace para que as páginas de listagem atualizem seus dados.
-- [x] Persistir perfis em SQLite e importar uma única vez o antigo `App_Data/connections.json`.
+- [x] Persistir perfis em SQLite sem arquivo JSON de conexões.
 - [x] Persistir a última conexão ativa e o namespace e restaurá-los automaticamente após reinício da aplicação/container com armazenamento persistente; não reconectar quando a última conexão foi explicitamente desconectada sem fallback.
 - [ ] Verificar conexão com um cluster de desenvolvimento e comportamento sem cluster.
 
@@ -406,11 +406,12 @@ Esta checklist acompanha o plano; não substitui as explicações, decisões ou 
 - [x] Implementar recolhimento e expansão em ramos de ownership e composição; expor containers, init/ephemeral containers e volumes dentro do ramo de Pod.
 - [x] Corrigir a identificação do nó pai no recolhimento para que o botão “−” oculte descendentes e “+” os restaure.
 - [x] Agrupar componentes relacionados em blocos verticais e ordenar cada coluna por proximidade das relações, mantendo relações compartilhadas fora do layout estrutural.
+- [x] Configurar as chaves de label relacionáveis pela página Configurações e persistir a lista no SQLite, sem defini-la em `appsettings.json` nem em variável de ambiente.
 - [x] Implementar zoom e redefinição de zoom.
 - [x] No dashboard, primeiro clique seleciona e destaca; segundo clique abre o painel lateral com tipo, versão, namespace/escopo, status, labels e annotations (sem annotations de Secret).
 - [x] Na lista de Recursos, selecionar o nome abre painel lateral no primeiro clique, com metadados disponíveis.
 - [x] Disponibilizar visualização do YAML observado nos dois painéis de detalhes, sem expor os valores de Secret.
-- [ ] Restringir o destaque ao selecionado e às relações diretas de ownership/agrupamento, dependência ou controle; impedir expansão transitiva por selectors e vizinhos de vizinhos.
+- [x] Restringir o destaque ao selecionado e às relações diretas de ownership/agrupamento, dependência ou controle; impedir expansão transitiva por selectors e vizinhos de vizinhos.
 - [x] Permitir navegar do painel lateral para recursos relacionados visíveis.
 - [x] Manter a lista de Recursos como alternativa à árvore e ligar as duas páginas.
 - [ ] Verificar navegação com recursos nativos e pelo menos um CRD em cluster real.
@@ -429,8 +430,8 @@ Esta checklist acompanha o plano; não substitui as explicações, decisões ou 
 
 ### F. Wiki e ajuda contextual
 
-- [ ] Integrar `src/docs/kubernetes-wiki/` como fonte Markdown versionada da página Wiki/Suporte.
-- [ ] Criar navegação e âncoras estáveis para os fundamentos Kubernetes.
+- [x] Integrar `src/docs/kubernetes-wiki/` como fonte Markdown versionada da página Wiki/Suporte.
+- [x] Criar navegação e âncoras estáveis para os fundamentos Kubernetes.
 - [ ] Mapear tipos conhecidos (`apiGroup` + `kind`) para explicações curtas e artigos.
 - [ ] Adicionar tooltip acessível com link para Wiki em cada tipo conhecido na navegação.
 - [ ] Mostrar explicação genérica e link sobre CRDs para tipos desconhecidos.
@@ -441,17 +442,20 @@ Esta checklist acompanha o plano; não substitui as explicações, decisões ou 
 - [ ] Implementar carregamento/edição de YAML/JSON e suporte a documentos separados por `---`.
 - [ ] Validar sintaxe, GVK, escopo e namespace antes de enviar.
 - [ ] Mostrar preview/diff, contexto e alvos afetados antes de mutações.
-- [ ] Implementar criação genérica com Kubernetes Client .NET.
-- [ ] Implementar patch/edição genérica com tratamento de conflito de versão.
-- [ ] Implementar exclusão com confirmação reforçada para recursos de alto impacto.
-- [ ] Verificar operações com recurso nativo e CRD; parar e registrar limites se a SDK não cobrir uma operação.
+- [x] Implementar criação genérica por manifesto YAML com API Kubernetes descoberta dinamicamente (inclui CRDs anunciados).
+- [x] Implementar atualização genérica via PUT com `resourceVersion` atual para rejeitar conflitos concorrentes.
+- [x] Implementar exclusão com confirmação que identifica contexto, escopo, tipo e nome.
+- [x] Implementar parada temporária de Deployment, StatefulSet e ReplicaSet escalando réplicas a zero.
+- [x] Implementar leitura de logs de Pod por container, com atualização automática a cada três segundos.
+- [ ] Mostrar preview/diff e alvo GVK/namespace derivados do manifesto antes da confirmação.
+- [ ] Verificar operações com recurso nativo e CRD em cluster real; testar conflitos e respostas RBAC.
 
 ### H. Docker e publicação GHCR
 
 - [x] Criar `src/Dockerfile` multi-stage sem incluir kubeconfig ou credenciais.
 - [x] Criar `src/.dockerignore` para excluir artefatos locais e segredos.
 - [x] Adicionar Compose com volume nomeado para preservar SQLite/Data Protection e bind de kubeconfig somente leitura, expondo a UI em loopback.
-- [ ] Documentar configuração de kubeconfig/contexto para execução local do container.
+- [x] Documentar configuração de kubeconfig/contexto para execução local do container.
 - [x] Criar workflow `.github/workflows/publish-image.yml` com permissões mínimas, execução manual e `GITHUB_TOKEN`.
 - [x] Definir tags branch/release/SHA e não emitir `latest` até existir política de release.
 - [ ] Construir e publicar a primeira imagem no GHCR após confirmar visibilidade do pacote e acionar o workflow.
@@ -497,3 +501,13 @@ Esta checklist acompanha o plano; não substitui as explicações, decisões ou 
 - [x] Organizar a apresentação em níveis conceituais horizontais, determinados pela profundidade estrutural, com cabeçalho dos tipos presentes e relações diretas transversais.
 - [x] Conferir compilação da solução sem avisos nem erros.
 - [ ] Validar visualmente no navegador as interações de tabela, seleção, filtros, cópia, fullscreen e pan; conferir hierarquias reais variadas em cluster.
+
+## 16. Validação do usuário e próximas prioridades (23/10/2026)
+
+- O usuário confirmou que dashboard, filtros, cópia, fullscreen, seleção e detalhes estão funcionando. Conexões persistentes e comportamento sem cluster foram validados. Internacionalização também foi validada.
+- A árvore precisa avançar de níveis conceituais para colunas exclusivas por `Kind`; recursos de kinds diferentes não devem compartilhar coluna. Implementação inicial feita em `Home.razor`; ainda requer validação visual e refinamento de ordem/escala.
+- A Wiki anterior foi considerada insuficiente. O documento anexado “Kubernetes — Fundamentos e Conceitos Avançados” foi integrado como `src/docs/kubernetes-wiki/fundamentos.md`, cobrindo 49 seções; `Wiki.razor` apresenta índice, âncoras e conteúdo local. Ainda revisar cobertura/estilo e mapear tooltips de kinds para os artigos.
+- O erro de build Docker do Rider reportou um diretório de trabalho `KubernetesVisualizer` inexistente. Foi criado Dockerfile na raiz, Compose agora usa a raiz como contexto e as instruções foram registradas em `docs/docker.md`. Ainda executar o build Docker no Rider ou CLI para confirmar o ambiente do usuário.
+- Fluxos genéricos já implementados nesta rodada: criar/atualizar recurso por YAML (um documento por vez), exclusão confirmada com identificação de contexto/escopo/tipo/nome, parada de Deployment/StatefulSet/ReplicaSet escalando para zero, e logs de Pod com seleção de container e polling opcional a cada três segundos.
+- Edição de Secret existente segue desativada para evitar reaplicar um manifesto parcial com valores redigidos; o usuário pode criar/aplicar um manifesto completo conscientemente. Ainda faltam preview/diff, operações com documentos separados por `---`, reversão/retomada amigável de workloads escalados a zero, e validação dos fluxos contra cluster real com RBAC/CRD.
+- Dockerfile na raiz e Compose atualizados: build Docker executado com sucesso após as mudanças.

@@ -1,6 +1,8 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
+using YamlDotNet.RepresentationModel;
 using KubernetesVisualizer.Models.UI;
 using KubernetesVisualizer;
 using k8s;
@@ -10,28 +12,28 @@ using Microsoft.Extensions.Localization;
 
 namespace KubernetesVisualizer.Services;
 
-public sealed class KubernetesClusterService : IDisposable
+public sealed class ClusterService : IDisposable
 {
-    private readonly ILogger<KubernetesClusterService> _logger;
-    private readonly KubernetesConnectionProfileStore _profileStore;
+    private readonly ILogger<ClusterService> _logger;
+    private readonly ConnectionProfileStore _profileStore;
+    private readonly ApplicationSettingsStore _settingsStore;
     private readonly IStringLocalizer<AppStrings> _localizer;
     private readonly Dictionary<string, ConnectedCluster> _connected = new(StringComparer.Ordinal);
     private K8SConfiguration? _draftKubeConfig;
     private string? _draftPath;
     private bool _profilesLoaded;
-    private bool _restoreAttempted;
     private KubernetesLastSelection _lastSelection = new(null, null);
-    private long _selectionRevision;
 
-    public KubernetesClusterService(ILogger<KubernetesClusterService> logger, KubernetesConnectionProfileStore profileStore, IStringLocalizer<AppStrings> localizer)
+    public ClusterService(ILogger<ClusterService> logger, ConnectionProfileStore profileStore,
+        ApplicationSettingsStore settingsStore,
+        IStringLocalizer<AppStrings> localizer)
     {
         _logger = logger;
         _profileStore = profileStore;
+        _settingsStore = settingsStore;
         _localizer = localizer;
     }
 
-    public event Action? Changed;
-    public event Action<KubernetesSelectionChangedEventArgs>? SelectionChanged;
     public IReadOnlyList<KubernetesConnectionProfile> Profiles { get; private set; } = [];
     public IReadOnlyList<KubernetesConnectionProfile> ConnectedProfiles => Profiles.Where(profile => _connected.ContainsKey(profile.Id)).ToArray();
     public IReadOnlyList<KubernetesContextOption> AvailableContexts { get; private set; } = [];
@@ -53,40 +55,14 @@ public sealed class KubernetesClusterService : IDisposable
     {
         if (_profilesLoaded) return;
         Profiles = await _profileStore.LoadAsync(cancellationToken);
-        _lastSelection = await _profileStore.LoadLastSelectionAsync(cancellationToken);
+        _lastSelection = await _settingsStore.LoadLastSelectionAsync(cancellationToken);
         _profilesLoaded = true;
-        NotifyChanged();
-    }
-
-    public async Task RestoreLastSelectionAsync(CancellationToken cancellationToken = default)
-    {
-        await EnsureProfilesLoadedAsync(cancellationToken);
-        if (_restoreAttempted) return;
-        _restoreAttempted = true;
-
-        var selection = _lastSelection;
-        if (selection.ConnectionId is null || Profiles.All(profile => profile.Id != selection.ConnectionId)) return;
-
-        await ConnectAsync(selection.ConnectionId, cancellationToken);
-        if (!IsProfileConnected(selection.ConnectionId)) return;
-
-        var state = _connected[selection.ConnectionId];
-        var savedNamespace = selection.Namespace;
-        if (savedNamespace is not null && state.Namespaces.Count > 0 && !state.Namespaces.Contains(savedNamespace, StringComparer.Ordinal))
-            savedNamespace = null;
-
-        state.Namespace = savedNamespace;
-        await _profileStore.SaveLastSelectionAsync(selection.ConnectionId, savedNamespace, cancellationToken);
-        _lastSelection = new KubernetesLastSelection(selection.ConnectionId, savedNamespace);
-        NotifyChanged();
-        NotifySelectionChanged(KubernetesSelectionChangeKind.Namespace);
     }
 
     public async Task LoadContextsFromPathAsync(string? path, CancellationToken cancellationToken = default)
     {
         Error = null;
         IsLoading = true;
-        NotifyChanged();
         try
         {
             _draftPath = ResolvePath(path);
@@ -122,7 +98,6 @@ public sealed class KubernetesClusterService : IDisposable
         finally
         {
             IsLoading = false;
-            NotifyChanged();
         }
     }
 
@@ -132,7 +107,6 @@ public sealed class KubernetesClusterService : IDisposable
         var profile = new KubernetesConnectionProfile(Guid.NewGuid().ToString("N"), name.Trim(), ResolvePath(kubeconfigPath), contextName);
         Profiles = [.. Profiles, profile];
         await _profileStore.SaveAsync(Profiles, cancellationToken);
-        NotifyChanged();
     }
 
     public async Task RemoveProfileAsync(string profileId, CancellationToken cancellationToken = default)
@@ -143,9 +117,8 @@ public sealed class KubernetesClusterService : IDisposable
         if (_lastSelection.ConnectionId == profileId)
         {
             _lastSelection = new KubernetesLastSelection(null, null);
-            await _profileStore.SaveLastSelectionAsync(null, null, cancellationToken);
+            await _settingsStore.SaveLastSelectionAsync(null, null, cancellationToken);
         }
-        NotifyChanged();
     }
 
     public async Task ConnectAsync(string profileId, CancellationToken cancellationToken = default)
@@ -159,7 +132,6 @@ public sealed class KubernetesClusterService : IDisposable
 
             IsLoading = true;
             Error = null;
-            NotifyChanged();
             Kubernetes? candidateClient = null;
             try
             {
@@ -197,7 +169,6 @@ public sealed class KubernetesClusterService : IDisposable
                 _logger.LogWarning("Falha ao conectar ao perfil {Profile}: {Message}", profileId, exception.Message);
                 Error = _localizer["ConnectionFailed", exception.Message];
                 IsLoading = false;
-                NotifyChanged();
                 return;
             }
             finally
@@ -210,9 +181,7 @@ public sealed class KubernetesClusterService : IDisposable
         KubeconfigPath = state.Profile.KubeconfigPath;
         Error = connectionNotice;
         _lastSelection = new KubernetesLastSelection(profileId, state.Namespace);
-        await _profileStore.SaveLastSelectionAsync(profileId, state.Namespace, cancellationToken);
-        NotifyChanged();
-        NotifySelectionChanged(KubernetesSelectionChangeKind.Connection);
+        await _settingsStore.SaveLastSelectionAsync(profileId, state.Namespace, cancellationToken);
     }
 
     public async Task SelectConnectionAsync(string? profileId, CancellationToken cancellationToken = default)
@@ -222,9 +191,7 @@ public sealed class KubernetesClusterService : IDisposable
         ActiveConnectionId = profileId;
         Error = null;
         _lastSelection = new KubernetesLastSelection(profileId, Active?.Namespace);
-        await _profileStore.SaveLastSelectionAsync(profileId, Active?.Namespace, cancellationToken);
-        NotifyChanged();
-        NotifySelectionChanged(KubernetesSelectionChangeKind.Cluster);
+        await _settingsStore.SaveLastSelectionAsync(profileId, Active?.Namespace, cancellationToken);
     }
 
     public async Task SelectNamespaceAsync(string? namespaceName, CancellationToken cancellationToken = default)
@@ -234,9 +201,7 @@ public sealed class KubernetesClusterService : IDisposable
         if (Active.Namespace == selectedNamespace) return;
         Active.Namespace = selectedNamespace;
         _lastSelection = new KubernetesLastSelection(ActiveConnectionId, selectedNamespace);
-        await _profileStore.SaveLastSelectionAsync(ActiveConnectionId, selectedNamespace, cancellationToken);
-        NotifyChanged();
-        NotifySelectionChanged(KubernetesSelectionChangeKind.Namespace);
+        await _settingsStore.SaveLastSelectionAsync(ActiveConnectionId, selectedNamespace, cancellationToken);
     }
 
     public async Task DisconnectAsync(string profileId, CancellationToken cancellationToken = default)
@@ -247,10 +212,8 @@ public sealed class KubernetesClusterService : IDisposable
         if (activeWasRemoved)
         {
             _lastSelection = Active is null ? new KubernetesLastSelection(null, null) : new KubernetesLastSelection(ActiveConnectionId, Active.Namespace);
-            await _profileStore.SaveLastSelectionAsync(_lastSelection.ConnectionId, _lastSelection.Namespace, cancellationToken);
+            await _settingsStore.SaveLastSelectionAsync(_lastSelection.ConnectionId, _lastSelection.Namespace, cancellationToken);
         }
-        NotifyChanged();
-        if (activeWasRemoved) NotifySelectionChanged(KubernetesSelectionChangeKind.Cluster);
     }
 
     public async Task<IReadOnlyList<KubernetesResourceType>> GetResourceTypesAsync(CancellationToken cancellationToken = default)
@@ -291,6 +254,21 @@ public sealed class KubernetesClusterService : IDisposable
         return results.OrderBy(item => item.Kind, StringComparer.OrdinalIgnoreCase).ToArray();
     }
 
+    private static async Task<HttpResponseMessage> SendMetadataListRequestAsync(Kubernetes client, string route,
+        bool metadataOnly, CancellationToken cancellationToken)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, ApiUri(client, route));
+        if (metadataOnly)
+            request.Headers.TryAddWithoutValidation("Accept", "application/json;as=PartialObjectMetadataList;g=meta.k8s.io;v=v1");
+        var response = await client.HttpClient.SendAsync(request, cancellationToken);
+        request.Dispose();
+        if (!metadataOnly || response.StatusCode is not (System.Net.HttpStatusCode.NotAcceptable or System.Net.HttpStatusCode.BadRequest))
+            return response;
+        response.Dispose();
+        using var fallback = new HttpRequestMessage(HttpMethod.Get, ApiUri(client, route));
+        return await client.HttpClient.SendAsync(fallback, cancellationToken);
+    }
+
     public async Task<IReadOnlyList<KubernetesResourceItem>> ListResourcesAsync(KubernetesResourceType type, string? namespaceName, CancellationToken cancellationToken = default)
     {
         var client = Active?.Client ?? throw new InvalidOperationException(_localizer["ConnectInSettings"]);
@@ -304,17 +282,15 @@ public sealed class KubernetesClusterService : IDisposable
         do
         {
             var pageRoute = continuation is null ? route : route + "&continue=" + Uri.EscapeDataString(continuation);
-            using var request = new HttpRequestMessage(HttpMethod.Get, ApiUri(client, pageRoute));
-            if (type.Kind == "Secret")
-                request.Headers.TryAddWithoutValidation("Accept", "application/json;as=PartialObjectMetadataList;g=meta.k8s.io;v=v1");
-            using var response = await client.HttpClient.SendAsync(request, cancellationToken);
+            using var response = await SendMetadataListRequestAsync(client, pageRoute, type.Kind == "Secret", cancellationToken);
             response.EnsureSuccessStatusCode();
             using var json = JsonDocument.Parse(await response.Content.ReadAsStreamAsync(cancellationToken));
             foreach (var item in json.RootElement.GetProperty("items").EnumerateArray())
             {
                 var metadata = item.GetProperty("metadata");
                 var objectNamespace = metadata.TryGetProperty("namespace", out var ns) ? ns.GetString() ?? string.Empty : string.Empty;
-                var status = item.TryGetProperty("status", out var statusElement) ? SummarizeStatus(type.Kind, statusElement) : string.Empty;
+                var status = IsTerminating(metadata) ? _localizer["Terminating"].Value
+                    : item.TryGetProperty("status", out var statusElement) ? SummarizeStatus(type.Kind, item, statusElement) : string.Empty;
                 var labels = ReadMetadataMap(metadata, "labels");
                 var annotations = type.Kind == "Secret" ? new Dictionary<string, string>(StringComparer.Ordinal) : ReadMetadataMap(metadata, "annotations");
                 items.Add(new KubernetesResourceItem(type.Kind,
@@ -340,11 +316,7 @@ public sealed class KubernetesClusterService : IDisposable
         do
         {
             var pageRoute = continuation is null ? route : route + "&continue=" + Uri.EscapeDataString(continuation);
-            using var request = new HttpRequestMessage(HttpMethod.Get, ApiUri(client, pageRoute));
-            if (type.Kind == "Secret")
-                request.Headers.TryAddWithoutValidation("Accept", "application/json;as=PartialObjectMetadataList;g=meta.k8s.io;v=v1");
-
-            using var response = await client.HttpClient.SendAsync(request, cancellationToken);
+            using var response = await SendMetadataListRequestAsync(client, pageRoute, type.Kind == "Secret", cancellationToken);
             response.EnsureSuccessStatusCode();
             using var json = JsonDocument.Parse(await response.Content.ReadAsStreamAsync(cancellationToken));
             foreach (var item in json.RootElement.GetProperty("items").EnumerateArray())
@@ -356,7 +328,8 @@ public sealed class KubernetesClusterService : IDisposable
                             owner.TryGetProperty("kind", out var kind) ? kind.GetString() ?? string.Empty : string.Empty,
                             owner.TryGetProperty("name", out var name) ? name.GetString() ?? string.Empty : string.Empty,
                             owner.TryGetProperty("uid", out var uid) ? uid.GetString() ?? string.Empty : string.Empty,
-                            owner.TryGetProperty("controller", out var controller) && controller.ValueKind == JsonValueKind.True))
+                            owner.TryGetProperty("controller", out var controller) && controller.ValueKind == JsonValueKind.True,
+                            owner.TryGetProperty("blockOwnerDeletion", out var block) && block.ValueKind == JsonValueKind.True))
                         .ToArray()
                     : [];
                 var labels = metadata.TryGetProperty("labels", out var labelObject) && labelObject.ValueKind == JsonValueKind.Object
@@ -371,8 +344,9 @@ public sealed class KubernetesClusterService : IDisposable
                     && selectorObject.ValueKind == JsonValueKind.Object
                         ? selectorObject.EnumerateObject().ToDictionary(pair => pair.Name, pair => pair.Value.GetString() ?? string.Empty, StringComparer.Ordinal)
                         : new Dictionary<string, string>(StringComparer.Ordinal);
-                var status = item.TryGetProperty("status", out var statusObject)
-                    ? SummarizeStatus(type.Kind, statusObject)
+                var status = IsTerminating(metadata) ? _localizer["Terminating"].Value
+                    : item.TryGetProperty("status", out var statusObject)
+                    ? SummarizeStatus(type.Kind, item, statusObject)
                     : string.Empty;
                 var name = metadata.TryGetProperty("name", out var objectName) ? objectName.GetString() ?? "(sem nome)" : "(sem nome)";
                 var objectNamespace = metadata.TryGetProperty("namespace", out var objectNamespaceElement)
@@ -382,6 +356,10 @@ public sealed class KubernetesClusterService : IDisposable
                 var compositions = type.Kind == "Pod" ? ExtractPodComposition(item) : [];
                 var isSystemManaged = IsKubernetesSystemManaged(metadata, objectNamespace);
                 var isControllerManaged = HasOwnerReferences(metadata);
+                var finalizers = metadata.TryGetProperty("finalizers", out var finalizerArray) && finalizerArray.ValueKind == JsonValueKind.Array
+                    ? finalizerArray.EnumerateArray().Where(value => value.ValueKind == JsonValueKind.String)
+                        .Select(value => value.GetString()!).ToArray()
+                    : [];
 
                 items.Add(new KubernetesResourceGraphItem(
                     type.Kind,
@@ -398,7 +376,8 @@ public sealed class KubernetesClusterService : IDisposable
                     references,
                     compositions,
                     isSystemManaged,
-                    isControllerManaged));
+                    isControllerManaged,
+                    finalizers));
             }
             continuation = json.RootElement.GetProperty("metadata").TryGetProperty("continue", out var token) ? token.GetString() : null;
         } while (!string.IsNullOrWhiteSpace(continuation));
@@ -413,15 +392,333 @@ public sealed class KubernetesClusterService : IDisposable
         var apiRoot = groupVersion.Contains('/') ? $"/apis/{groupVersion}" : $"/api/{groupVersion}";
         var namespacePath = string.IsNullOrWhiteSpace(namespaceName) ? string.Empty : $"/namespaces/{Uri.EscapeDataString(namespaceName)}";
         var route = $"{apiRoot}{namespacePath}/{resourceName}/{Uri.EscapeDataString(name)}";
-        using var request = new HttpRequestMessage(HttpMethod.Get, ApiUri(client, route));
-        if (kind == "Secret")
-            request.Headers.TryAddWithoutValidation("Accept", "application/json;as=PartialObjectMetadata;g=meta.k8s.io;v=v1");
-        using var response = await client.HttpClient.SendAsync(request, cancellationToken);
+        using var response = await client.HttpClient.GetAsync(ApiUri(client, route), cancellationToken);
         response.EnsureSuccessStatusCode();
         using var document = JsonDocument.Parse(await response.Content.ReadAsStreamAsync(cancellationToken));
-        var builder = new StringBuilder();
-        WriteYaml(document.RootElement, builder, 0, redactSecretData: kind == "Secret");
-        return builder.ToString();
+        var yaml = new YamlStream(new YamlDocument(JsonToYaml(document.RootElement, redactSecretData: kind == "Secret")));
+        using var writer = new StringWriter(System.Globalization.CultureInfo.InvariantCulture);
+        yaml.Save(writer, assignAnchors: false);
+        return writer.ToString();
+    }
+
+    public async Task<IReadOnlyDictionary<string, string>> GetSecretDataAsync(KubernetesResourceItem item,
+        CancellationToken cancellationToken = default)
+    {
+        if (item.Kind != "Secret") throw new InvalidOperationException("O recurso selecionado não é um Secret.");
+        var client = Active?.Client ?? throw new InvalidOperationException(_localizer["ConnectInSettings"]);
+        var apiRoot = item.GroupVersion.Contains('/') ? $"/apis/{item.GroupVersion}" : $"/api/{item.GroupVersion}";
+        var ns = string.IsNullOrWhiteSpace(item.Namespace) ? string.Empty : $"/namespaces/{Uri.EscapeDataString(item.Namespace)}";
+        var route = $"{apiRoot}{ns}/{item.ResourceName}/{Uri.EscapeDataString(item.Name)}";
+        using var response = await client.HttpClient.GetAsync(ApiUri(client, route), cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new HttpRequestException($"Falha ao revelar Secret ({(int)response.StatusCode}): {error}", null, response.StatusCode);
+        }
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStreamAsync(cancellationToken));
+        if (!document.RootElement.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Object)
+            return new Dictionary<string, string>();
+        var values = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var entry in data.EnumerateObject())
+        {
+            var encoded = entry.Value.GetString() ?? string.Empty;
+            try { values[entry.Name] = new UTF8Encoding(false, true).GetString(Convert.FromBase64String(encoded)); }
+            catch (Exception exception) when (exception is FormatException or DecoderFallbackException) { values[entry.Name] = encoded; }
+        }
+        return values;
+    }
+
+    public async Task<string> ApplyManifestYamlAsync(string yaml, CancellationToken cancellationToken = default)
+    {
+        var client = Active?.Client ?? throw new InvalidOperationException(_localizer["ConnectInSettings"]);
+        var yamlStream = new YamlStream();
+        yamlStream.Load(new StringReader(yaml));
+        if (yamlStream.Documents.Count != 1 || yamlStream.Documents[0].RootNode is not YamlMappingNode root)
+            throw new InvalidOperationException("Informe exatamente um manifesto YAML com um objeto na raiz.");
+
+        var json = ConvertYamlNode(root) as JsonObject ?? throw new InvalidOperationException("O manifesto deve ser um objeto YAML.");
+        var apiVersion = json["apiVersion"]?.GetValue<string>();
+        var kind = json["kind"]?.GetValue<string>();
+        var metadata = json["metadata"] as JsonObject;
+        var name = metadata?["name"]?.GetValue<string>();
+        if (string.IsNullOrWhiteSpace(apiVersion) || string.IsNullOrWhiteSpace(kind) || string.IsNullOrWhiteSpace(name))
+            throw new InvalidOperationException("O manifesto precisa conter apiVersion, kind e metadata.name.");
+
+        var type = (await GetResourceTypesAsync(cancellationToken)).FirstOrDefault(candidate =>
+            candidate.Kind.Equals(kind, StringComparison.OrdinalIgnoreCase)
+            && candidate.GroupVersion.Equals(apiVersion, StringComparison.OrdinalIgnoreCase));
+        if (type is null) throw new InvalidOperationException($"O cluster não anuncia {kind} em {apiVersion}.");
+        var namespaceName = metadata?["namespace"]?.GetValue<string>();
+        if (type.Namespaced && string.IsNullOrWhiteSpace(namespaceName))
+            namespaceName = CurrentNamespace ?? throw new InvalidOperationException("Informe metadata.namespace ou selecione um namespace.");
+        if (!type.Namespaced && !string.IsNullOrWhiteSpace(namespaceName))
+            throw new InvalidOperationException($"{kind} é cluster-wide e não aceita metadata.namespace.");
+        if (metadata is not null && type.Namespaced) metadata["namespace"] = namespaceName;
+
+        var apiRoute = type.ApiPath;
+        if (type.Namespaced && !string.IsNullOrWhiteSpace(namespaceName)) apiRoute += $"/namespaces/{Uri.EscapeDataString(namespaceName)}";
+        var collectionRoute = $"{apiRoute}/{type.Name}";
+        var itemRoute = $"{collectionRoute}/{Uri.EscapeDataString(name)}";
+        var existing = await client.HttpClient.GetAsync(ApiUri(client, itemRoute), cancellationToken);
+        HttpMethod method;
+        string route;
+        if (existing.IsSuccessStatusCode)
+        {
+            using var currentDocument = JsonDocument.Parse(await existing.Content.ReadAsStreamAsync(cancellationToken));
+            var currentMetadata = currentDocument.RootElement.GetProperty("metadata");
+            if (currentMetadata.TryGetProperty("resourceVersion", out var resourceVersion)) metadata!["resourceVersion"] = resourceVersion.GetString();
+            existing.Dispose();
+            method = HttpMethod.Put;
+            route = itemRoute;
+            foreach (var field in new[] { "uid", "creationTimestamp", "generation", "managedFields" }) metadata?.Remove(field);
+        }
+        else if (existing.StatusCode == HttpStatusCode.NotFound)
+        {
+            existing.Dispose();
+            method = HttpMethod.Post;
+            route = collectionRoute;
+        }
+        else
+        {
+            var error = await existing.Content.ReadAsStringAsync(cancellationToken);
+            var code = existing.StatusCode;
+            existing.Dispose();
+            throw new HttpRequestException($"Falha ao verificar o recurso ({(int)code}): {error}", null, code);
+        }
+
+        json.Remove("status");
+        using var request = new HttpRequestMessage(method, ApiUri(client, route))
+        {
+            Content = new StringContent(json.ToJsonString(), Encoding.UTF8, "application/json")
+        };
+        using var response = await client.HttpClient.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new HttpRequestException($"Falha ao aplicar {kind}/{name} ({(int)response.StatusCode}): {error}", null, response.StatusCode);
+        }
+        return $"{kind}/{name} {(method == HttpMethod.Post ? "criado" : "atualizado")}.";
+    }
+
+    public async Task DeleteResourceAsync(KubernetesResourceItem item, CancellationToken cancellationToken = default)
+    {
+        var client = Active?.Client ?? throw new InvalidOperationException(_localizer["ConnectInSettings"]);
+        var type = (await GetResourceTypesAsync(cancellationToken)).FirstOrDefault(candidate =>
+            candidate.Kind.Equals(item.Kind, StringComparison.OrdinalIgnoreCase)
+            && candidate.GroupVersion.Equals(item.GroupVersion, StringComparison.OrdinalIgnoreCase)
+            && candidate.Name.Equals(item.ResourceName, StringComparison.OrdinalIgnoreCase))
+            ?? throw new InvalidOperationException($"O tipo {item.Kind} não está mais disponível no cluster.");
+        var route = type.ApiPath;
+        if (type.Namespaced && !string.IsNullOrWhiteSpace(item.Namespace)) route += $"/namespaces/{Uri.EscapeDataString(item.Namespace)}";
+        route += $"/{type.Name}/{Uri.EscapeDataString(item.Name)}";
+        using var response = await client.HttpClient.DeleteAsync(ApiUri(client, route), cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new HttpRequestException($"Falha ao excluir {item.Kind}/{item.Name} ({(int)response.StatusCode}): {error}", null, response.StatusCode);
+        }
+    }
+
+    public async Task<string> GetPodLogsAsync(string namespaceName, string podName, string? containerName,
+        int tailLines = 200, CancellationToken cancellationToken = default)
+    {
+        var client = Active?.Client ?? throw new InvalidOperationException(_localizer["ConnectInSettings"]);
+        var route = $"/api/v1/namespaces/{Uri.EscapeDataString(namespaceName)}/pods/{Uri.EscapeDataString(podName)}/log?tailLines={Math.Clamp(tailLines, 1, 5000)}";
+        if (!string.IsNullOrWhiteSpace(containerName)) route += $"&container={Uri.EscapeDataString(containerName)}";
+        using var response = await client.HttpClient.GetAsync(ApiUri(client, route), cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new HttpRequestException($"Falha ao ler logs do Pod ({(int)response.StatusCode}): {error}", null, response.StatusCode);
+        }
+        return await response.Content.ReadAsStringAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<string>> GetPodContainerNamesAsync(string namespaceName, string podName,
+        CancellationToken cancellationToken = default)
+    {
+        var client = Active?.Client ?? throw new InvalidOperationException(_localizer["ConnectInSettings"]);
+        var route = $"/api/v1/namespaces/{Uri.EscapeDataString(namespaceName)}/pods/{Uri.EscapeDataString(podName)}";
+        using var response = await client.HttpClient.GetAsync(ApiUri(client, route), cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new HttpRequestException($"Falha ao ler containers do Pod ({(int)response.StatusCode}): {error}", null, response.StatusCode);
+        }
+
+        using var document = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(cancellationToken), cancellationToken: cancellationToken);
+        if (!document.RootElement.TryGetProperty("spec", out var spec)) return [];
+
+        var names = new List<string>();
+        foreach (var field in new[] { "containers", "initContainers", "ephemeralContainers" })
+        {
+            if (!spec.TryGetProperty(field, out var containers) || containers.ValueKind != JsonValueKind.Array) continue;
+            foreach (var container in containers.EnumerateArray())
+                if (container.TryGetProperty("name", out var name) && name.ValueKind == JsonValueKind.String
+                    && !string.IsNullOrWhiteSpace(name.GetString()))
+                    names.Add(name.GetString()!);
+        }
+        return names.Distinct(StringComparer.Ordinal).ToArray();
+    }
+
+    public async Task StopWorkloadAsync(KubernetesResourceItem item, CancellationToken cancellationToken = default)
+    {
+        if (item.Kind == "Pod")
+        {
+            await DeleteResourceAsync(item, cancellationToken);
+            return;
+        }
+        if (item.Kind is not ("Deployment" or "StatefulSet" or "ReplicaSet"))
+            throw new InvalidOperationException("Parada é suportada para Pod, Deployment, StatefulSet e ReplicaSet.");
+        var client = Active?.Client ?? throw new InvalidOperationException(_localizer["ConnectInSettings"]);
+        var type = (await GetResourceTypesAsync(cancellationToken)).First(candidate =>
+            candidate.Kind.Equals(item.Kind, StringComparison.OrdinalIgnoreCase)
+            && candidate.GroupVersion.Equals(item.GroupVersion, StringComparison.OrdinalIgnoreCase));
+        var route = $"{type.ApiPath}/namespaces/{Uri.EscapeDataString(item.Namespace)}/{type.Name}/{Uri.EscapeDataString(item.Name)}";
+        using var current = await client.HttpClient.GetAsync(ApiUri(client, route), cancellationToken);
+        current.EnsureSuccessStatusCode();
+        using var currentJson = JsonDocument.Parse(await current.Content.ReadAsStreamAsync(cancellationToken));
+        var replicas = currentJson.RootElement.TryGetProperty("spec", out var spec)
+                       && spec.TryGetProperty("replicas", out var currentReplicas) && currentReplicas.TryGetInt32(out var count)
+            ? count : 1;
+        if (replicas <= 0) throw new InvalidOperationException("Este workload já está sem réplicas ativas para salvar como estado anterior.");
+        var stateKey = GetStoppedWorkloadSettingKey(item);
+        var previous = await _settingsStore.GetApplicationSettingAsync(stateKey, cancellationToken);
+        await _settingsStore.SetApplicationSettingAsync(stateKey, replicas.ToString(System.Globalization.CultureInfo.InvariantCulture), cancellationToken);
+        try { await PatchReplicasAsync(client, route, 0, cancellationToken); }
+        catch
+        {
+            await _settingsStore.SetApplicationSettingAsync(stateKey, previous, cancellationToken);
+            throw;
+        }
+    }
+
+    public async Task<int?> GetStoppedWorkloadReplicasAsync(KubernetesResourceItem item, CancellationToken cancellationToken = default)
+    {
+        var value = await _settingsStore.GetApplicationSettingAsync(GetStoppedWorkloadSettingKey(item), cancellationToken);
+        return int.TryParse(value, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var replicas)
+            ? replicas : null;
+    }
+
+    public async Task<WorkloadReplicaState?> GetWorkloadReplicaStateAsync(KubernetesResourceItem item, CancellationToken cancellationToken = default)
+    {
+        if (item.Kind is not ("Deployment" or "StatefulSet" or "ReplicaSet")) return null;
+        var client = Active?.Client ?? throw new InvalidOperationException(_localizer["ConnectInSettings"]);
+        var type = (await GetResourceTypesAsync(cancellationToken)).First(candidate =>
+            candidate.Kind.Equals(item.Kind, StringComparison.OrdinalIgnoreCase)
+            && candidate.GroupVersion.Equals(item.GroupVersion, StringComparison.OrdinalIgnoreCase));
+        var route = $"{type.ApiPath}/namespaces/{Uri.EscapeDataString(item.Namespace)}/{type.Name}/{Uri.EscapeDataString(item.Name)}";
+        using var response = await client.HttpClient.GetAsync(ApiUri(client, route), cancellationToken);
+        response.EnsureSuccessStatusCode();
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStreamAsync(cancellationToken));
+        var currentReplicas = ReadCount(json.RootElement, "spec", "replicas") ?? 1;
+        var previousReplicas = currentReplicas == 0 ? await GetStoppedWorkloadReplicasAsync(item, cancellationToken) : null;
+        return new WorkloadReplicaState(currentReplicas, previousReplicas);
+    }
+
+    public async Task ResumeWorkloadAsync(KubernetesResourceItem item, CancellationToken cancellationToken = default)
+    {
+        if (item.Kind is not ("Deployment" or "StatefulSet" or "ReplicaSet"))
+            throw new InvalidOperationException("Retomada de réplica é suportada para Deployment, StatefulSet e ReplicaSet.");
+        var replicas = await GetStoppedWorkloadReplicasAsync(item, cancellationToken)
+            ?? throw new InvalidOperationException("Não há uma quantidade anterior de réplicas salva para restaurar.");
+        var client = Active?.Client ?? throw new InvalidOperationException(_localizer["ConnectInSettings"]);
+        var type = (await GetResourceTypesAsync(cancellationToken)).First(candidate =>
+            candidate.Kind.Equals(item.Kind, StringComparison.OrdinalIgnoreCase)
+            && candidate.GroupVersion.Equals(item.GroupVersion, StringComparison.OrdinalIgnoreCase));
+        var route = $"{type.ApiPath}/namespaces/{Uri.EscapeDataString(item.Namespace)}/{type.Name}/{Uri.EscapeDataString(item.Name)}";
+        await PatchReplicasAsync(client, route, replicas, cancellationToken);
+        await _settingsStore.SetApplicationSettingAsync(GetStoppedWorkloadSettingKey(item), null, cancellationToken);
+    }
+
+    private string GetStoppedWorkloadSettingKey(KubernetesResourceItem item) =>
+        $"stopped_replicas:{ActiveConnectionId}:{item.GroupVersion}:{item.Namespace}:{item.Kind}:{item.Name}";
+
+    private static async Task PatchReplicasAsync(Kubernetes client, string route, int replicas, CancellationToken cancellationToken)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Patch, ApiUri(client, route))
+        {
+            Content = new StringContent(JsonSerializer.Serialize(new { spec = new { replicas } }), Encoding.UTF8, "application/merge-patch+json")
+        };
+        using var response = await client.HttpClient.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new HttpRequestException($"Falha ao alterar réplicas ({(int)response.StatusCode}): {error}", null, response.StatusCode);
+        }
+    }
+
+    public async Task<IReadOnlyList<KubernetesResourceActionResult>> DeleteResourcesAsync(
+        IReadOnlyList<KubernetesResourceItem> items, CancellationToken cancellationToken = default) =>
+        await RunResourceActionsAsync(items, item => DeleteResourceAsync(item, cancellationToken), cancellationToken);
+
+    public async Task<IReadOnlyList<KubernetesResourceActionResult>> StopResourcesAsync(
+        IReadOnlyList<KubernetesResourceItem> items, CancellationToken cancellationToken = default) =>
+        await RunResourceActionsAsync(items, item => StopWorkloadAsync(item, cancellationToken), cancellationToken);
+
+    public async Task<IReadOnlyList<KubernetesResourceActionResult>> ResumeResourcesAsync(
+        IReadOnlyList<KubernetesResourceItem> items, CancellationToken cancellationToken = default) =>
+        await RunResourceActionsAsync(items, item => ResumeWorkloadAsync(item, cancellationToken), cancellationToken);
+
+    private static async Task<IReadOnlyList<KubernetesResourceActionResult>> RunResourceActionsAsync(
+        IReadOnlyList<KubernetesResourceItem> items, Func<KubernetesResourceItem, Task> action, CancellationToken cancellationToken)
+    {
+        var results = new System.Collections.Concurrent.ConcurrentBag<KubernetesResourceActionResult>();
+        await Parallel.ForEachAsync(items, new ParallelOptions { MaxDegreeOfParallelism = 4, CancellationToken = cancellationToken }, async (item, token) =>
+        {
+            try { await action(item); results.Add(new KubernetesResourceActionResult(item, true, "OK")); }
+            catch (Exception exception) when (exception is not OperationCanceledException)
+            { results.Add(new KubernetesResourceActionResult(item, false, exception.Message)); }
+        });
+        return results.OrderBy(result => result.Resource.Kind, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(result => result.Resource.Namespace, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(result => result.Resource.Name, StringComparer.OrdinalIgnoreCase).ToArray();
+    }
+
+    private static JsonNode? ConvertYamlNode(YamlNode node) => node switch
+    {
+        YamlMappingNode mapping => new JsonObject(mapping.Children.Select(pair =>
+            new KeyValuePair<string, JsonNode?>(pair.Key is YamlScalarNode key ? key.Value ?? string.Empty : pair.Key.ToString(), ConvertYamlNode(pair.Value)))),
+        YamlSequenceNode sequence => new JsonArray(sequence.Children.Select(ConvertYamlNode).ToArray()),
+        YamlScalarNode scalar => ConvertYamlScalar(scalar),
+        _ => null
+    };
+
+    private static YamlNode JsonToYaml(JsonElement value, bool redactSecretData = false)
+    {
+        switch (value.ValueKind)
+        {
+            case JsonValueKind.Object:
+            {
+                var mapping = new YamlMappingNode();
+                foreach (var property in value.EnumerateObject())
+                {
+                    if (redactSecretData && property.Name is "data" or "stringData") continue;
+                    mapping.Add(new YamlScalarNode(property.Name), JsonToYaml(property.Value));
+                }
+                return mapping;
+            }
+            case JsonValueKind.Array:
+                return new YamlSequenceNode(value.EnumerateArray().Select(child => JsonToYaml(child)));
+            case JsonValueKind.String:
+                return new YamlScalarNode(value.GetString()) { Style = YamlDotNet.Core.ScalarStyle.DoubleQuoted };
+            case JsonValueKind.Number:
+                return new YamlScalarNode(value.GetRawText()) { Style = YamlDotNet.Core.ScalarStyle.Plain };
+            case JsonValueKind.True: return new YamlScalarNode("true") { Style = YamlDotNet.Core.ScalarStyle.Plain };
+            case JsonValueKind.False: return new YamlScalarNode("false") { Style = YamlDotNet.Core.ScalarStyle.Plain };
+            default: return new YamlScalarNode("null") { Style = YamlDotNet.Core.ScalarStyle.Plain };
+        }
+    }
+
+    private static JsonNode? ConvertYamlScalar(YamlScalarNode scalar)
+    {
+        var value = scalar.Value;
+        if (scalar.Style != YamlDotNet.Core.ScalarStyle.Plain || value is null) return value is null ? null : JsonValue.Create(value);
+        if (value is "null" or "Null" or "NULL" or "~") return null;
+        if (bool.TryParse(value, out var boolean)) return JsonValue.Create(boolean);
+        if (long.TryParse(value, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var integer)) return JsonValue.Create(integer);
+        if (double.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var number)) return JsonValue.Create(number);
+        return JsonValue.Create(value);
     }
 
     private static bool HasOwnerReferences(JsonElement metadata) =>
@@ -437,23 +734,10 @@ public sealed class KubernetesClusterService : IDisposable
     private static bool IsKubernetesSystemManaged(JsonElement metadata, string namespaceName)
     {
         if (namespaceName is "kube-system" or "kube-public" or "kube-node-lease") return true;
-        if (metadata.TryGetProperty("name", out var nameElement)
-            && nameElement.GetString() is "kube-system" or "kube-public" or "kube-node-lease") return true;
         if (metadata.TryGetProperty("annotations", out var annotations) && annotations.ValueKind == JsonValueKind.Object
             && annotations.TryGetProperty("kubernetes.io/created-by", out _)) return true;
-        if (!metadata.TryGetProperty("managedFields", out var managedFields) || managedFields.ValueKind != JsonValueKind.Array) return false;
-        return managedFields.EnumerateArray().Any(field =>
-        {
-            if (!field.TryGetProperty("manager", out var managerElement)) return false;
-            var manager = managerElement.GetString() ?? string.Empty;
-            return manager.StartsWith("kube-controller-manager", StringComparison.OrdinalIgnoreCase)
-                   || manager.StartsWith("kube-scheduler", StringComparison.OrdinalIgnoreCase)
-                   || manager.StartsWith("kubelet", StringComparison.OrdinalIgnoreCase)
-                   || manager.StartsWith("kube-proxy", StringComparison.OrdinalIgnoreCase)
-                   || manager.StartsWith("endpointslice-controller", StringComparison.OrdinalIgnoreCase)
-                   || manager.StartsWith("namespace-controller", StringComparison.OrdinalIgnoreCase)
-                   || manager.StartsWith("service-controller", StringComparison.OrdinalIgnoreCase);
-        });
+        // managedFields identifies who last managed fields, not whether this is a system resource.
+        return false;
     }
 
     private static void WriteYaml(JsonElement value, StringBuilder output, int indent, bool redactSecretData = false)
@@ -562,6 +846,25 @@ public sealed class KubernetesClusterService : IDisposable
 
         switch (kind)
         {
+            case "Deployment":
+            case "ReplicaSet":
+            case "DaemonSet":
+            case "ReplicationController":
+                AddSelectorEdges(item, "spec", "selector", "workload-selector", objectNamespace, references);
+                break;
+            case "StatefulSet":
+                AddSelectorEdges(item, "spec", "selector", "workload-selector", objectNamespace, references);
+                Add("Service", StringAt(item, "spec", "serviceName"), objectNamespace, "statefulset-service", false);
+                if (TryPath(item, out var claimTemplates, "spec", "volumeClaimTemplates") && claimTemplates.ValueKind == JsonValueKind.Array)
+                    foreach (var template in claimTemplates.EnumerateArray())
+                    {
+                        var claimName = StringAt(template, "metadata", "name");
+                        if (!string.IsNullOrWhiteSpace(claimName))
+                            references.Add(new KubernetesResourceGraphReference("PersistentVolumeClaim",
+                                $"{claimName}-{StringAt(item, "metadata", "name")}-", objectNamespace,
+                                "statefulset-claim-template", false, TargetNameIsPrefix: true));
+                    }
+                break;
             case "Pod":
                 Add("Node", StringAt(item, "spec", "nodeName"), null, "pod-node", false);
                 Add("RuntimeClass", StringAt(item, "spec", "runtimeClassName"), null, "pod-runtime-class", false);
@@ -584,6 +887,32 @@ public sealed class KubernetesClusterService : IDisposable
                             foreach (var path in paths.EnumerateArray())
                                 Add("Service", StringAt(path, "backend", "service", "name"), objectNamespace, "ingress-backend", false);
                 Add("Service", StringAt(item, "spec", "defaultBackend", "service", "name"), objectNamespace, "ingress-backend", false);
+                break;
+            case "IngressRoute":
+                if (TryPath(item, out var ingressRoutes, "spec", "routes") && ingressRoutes.ValueKind == JsonValueKind.Array)
+                    foreach (var route in ingressRoutes.EnumerateArray())
+                    {
+                        if (TryPath(route, out var middlewares, "middlewares") && middlewares.ValueKind == JsonValueKind.Array)
+                            foreach (var middleware in middlewares.EnumerateArray())
+                                Add("Middleware", StringAt(middleware, "name"), StringAt(middleware, "namespace") ?? objectNamespace,
+                                    "ingressroute-middleware", false);
+                        if (TryPath(route, out var services, "services") && services.ValueKind == JsonValueKind.Array)
+                            foreach (var service in services.EnumerateArray())
+                            {
+                                var name = StringAt(service, "name");
+                                // Traefik's api@internal is an internal provider target, not a Kubernetes Service object.
+                                if (string.Equals(name, "api@internal", StringComparison.OrdinalIgnoreCase)) continue;
+                                Add(StringAt(service, "kind") ?? "Service", name,
+                                    StringAt(service, "namespace") ?? objectNamespace, "ingressroute-service", false);
+                            }
+                    }
+                break;
+            case "Middleware":
+                Add("Secret", StringAt(item, "spec", "basicAuth", "secret"), objectNamespace, "middleware-secret", false);
+                if (TryPath(item, out var chainMiddlewares, "spec", "chain", "middlewares") && chainMiddlewares.ValueKind == JsonValueKind.Array)
+                    foreach (var middleware in chainMiddlewares.EnumerateArray())
+                        Add("Middleware", StringAt(middleware, "name"), StringAt(middleware, "namespace") ?? objectNamespace,
+                            "middleware-chain", false);
                 break;
             case "HorizontalPodAutoscaler":
                 Add(StringAt(item, "spec", "scaleTargetRef", "kind"), StringAt(item, "spec", "scaleTargetRef", "name"), objectNamespace, "hpa-target", false);
@@ -679,7 +1008,15 @@ public sealed class KubernetesClusterService : IDisposable
                     null => string.Empty,
                     _ => source.Name
                 };
-                items.Add(new KubernetesResourceGraphComposition("Volume", name, details, string.Empty));
+                var claimName = source.Name == "persistentVolumeClaim"
+                    ? ReadString(source.Value, "claimName")
+                    : null;
+                var relatedResource = string.IsNullOrWhiteSpace(claimName)
+                    ? null
+                    : new KubernetesResourceGraphReference("PersistentVolumeClaim", claimName,
+                        ReadPathString(pod, "metadata", "namespace") ?? string.Empty,
+                        "pod-volume-claim", false);
+                items.Add(new KubernetesResourceGraphComposition("Volume", name, details, string.Empty, relatedResource));
             }
 
         return items;
@@ -808,19 +1145,119 @@ public sealed class KubernetesClusterService : IDisposable
                         add("Service", ReadString(backend, "name"), ReadString(backend, "namespace") ?? objectNamespace, "route-backend", false);
     }
 
-    private static string SummarizeStatus(string kind, JsonElement status)
+    private string SummarizeStatus(string kind, JsonElement resource, JsonElement status)
     {
-        if (kind == "Pod" && status.TryGetProperty("phase", out var phase)) return phase.GetString() ?? string.Empty;
-        if (kind == "Deployment" && status.TryGetProperty("readyReplicas", out var ready))
-            return $"{ready.GetInt32()}/{(status.TryGetProperty("replicas", out var replicas) ? replicas.GetInt32() : 0)} prontos";
+        if (kind == "Pod") return string.IsNullOrWhiteSpace(SummarizePodStatus(status))
+            ? _localizer["NotApplicable"].Value : SummarizePodStatus(status);
+        if (kind is "Deployment" or "ReplicaSet" or "StatefulSet")
+        {
+            var desired = ReadCount(resource, "spec", "replicas") ?? ReadCount(status, "replicas") ?? 0;
+            var ready = ReadCount(status, "readyReplicas") ?? 0;
+            return $"{ready}/{desired} {_localizer["Ready"]}";
+        }
+        if (kind == "DaemonSet")
+        {
+            var desired = ReadCount(status, "desiredNumberScheduled") ?? 0;
+            var ready = ReadCount(status, "numberReady") ?? 0;
+            return $"{ready}/{desired} {_localizer["Ready"]}";
+        }
+        if (kind == "Job")
+        {
+            var succeeded = ReadCount(status, "succeeded") ?? 0;
+            var completions = ReadCount(resource, "spec", "completions");
+            var active = ReadCount(status, "active") ?? 0;
+            var failed = ReadCount(status, "failed") ?? 0;
+            return completions is null ? $"{succeeded} {_localizer["Completed"]} · {active} {_localizer["Active"]} · {failed} {_localizer["Failed"]}"
+                : $"{succeeded}/{completions} {_localizer["Completed"]} · {active} {_localizer["Active"]} · {failed} {_localizer["Failed"]}";
+        }
+        if (kind == "CronJob" && status.TryGetProperty("active", out var activeJobs) && activeJobs.ValueKind == JsonValueKind.Array)
+            return $"{activeJobs.GetArrayLength()} {_localizer["ActiveJobs"]}";
+        if (kind is "PersistentVolume" or "PersistentVolumeClaim" or "Namespace"
+            && status.TryGetProperty("phase", out var phase) && phase.ValueKind == JsonValueKind.String)
+            return phase.GetString() ?? _localizer["NotApplicable"].Value;
+        if (kind == "HorizontalPodAutoscaler")
+        {
+            var current = ReadCount(status, "currentReplicas");
+            var desired = ReadCount(status, "desiredReplicas");
+            if (current is not null && desired is not null) return $"{current}/{desired} {_localizer["Replicas"]}";
+        }
+        if (kind == "PodDisruptionBudget" && ReadCount(status, "disruptionsAllowed") is { } allowed)
+            return $"{allowed} {_localizer["DisruptionsAllowed"]}";
+        if (kind == "Service")
+        {
+            if (status.TryGetProperty("loadBalancer", out var loadBalancer)
+                && TryPropertyPath(loadBalancer, out var ingresses, "ingress") && ingresses.ValueKind == JsonValueKind.Array
+                && ingresses.GetArrayLength() > 0)
+                return $"{_localizer["LoadBalancer"]}: {ingresses.GetArrayLength()} {_localizer["Addresses"]}";
+            var type = ReadPathString(resource, "spec", "type") ?? "ClusterIP";
+            var clusterIp = ReadPathString(resource, "spec", "clusterIP");
+            return string.IsNullOrWhiteSpace(clusterIp) || clusterIp == "None" ? type : $"{type} · {clusterIp}";
+        }
         if (status.TryGetProperty("conditions", out var conditions) && conditions.ValueKind == JsonValueKind.Array)
         {
-            var latest = conditions.EnumerateArray().LastOrDefault();
-            if (latest.ValueKind == JsonValueKind.Object && latest.TryGetProperty("type", out var type) && latest.TryGetProperty("status", out var value))
-                return $"{type.GetString()}: {value.GetString()}";
+            var priorities = new[] { "Ready", "Available", "Progressing", "Complete", "Failed", "Established", "Scheduled" };
+            var condition = conditions.EnumerateArray()
+                .Where(candidate => candidate.ValueKind == JsonValueKind.Object)
+                .OrderBy(candidate => Array.FindIndex(priorities, preferred =>
+                    candidate.TryGetProperty("type", out var type) && type.GetString()?.Equals(preferred, StringComparison.OrdinalIgnoreCase) == true) is var index && index >= 0 ? index : int.MaxValue)
+                .FirstOrDefault();
+            if (condition.ValueKind == JsonValueKind.Object && condition.TryGetProperty("type", out var conditionType)
+                && condition.TryGetProperty("status", out var conditionStatus))
+            {
+                var reason = ReadString(condition, "reason");
+                return string.IsNullOrWhiteSpace(reason)
+                    ? $"{conditionType.GetString()}: {conditionStatus.GetString()}"
+                    : $"{conditionType.GetString()}: {conditionStatus.GetString()} · {reason}";
+            }
         }
-        return string.Empty;
+        if (status.TryGetProperty("phase", out var genericPhase) && genericPhase.ValueKind == JsonValueKind.String)
+            return genericPhase.GetString() ?? _localizer["NotApplicable"].Value;
+        return _localizer["NotApplicable"].Value;
     }
+
+    private static int? ReadCount(JsonElement element, params string[] path)
+    {
+        var current = element;
+        foreach (var part in path)
+        {
+            if (current.ValueKind != JsonValueKind.Object || !current.TryGetProperty(part, out current)) return null;
+        }
+        return current.TryGetInt32(out var value) ? value : null;
+    }
+
+    private string SummarizePodStatus(JsonElement status)
+    {
+        var parts = new List<string>();
+        if (status.TryGetProperty("phase", out var phase) && phase.ValueKind == JsonValueKind.String)
+            parts.Add(phase.GetString() ?? "Unknown");
+        if (status.TryGetProperty("containerStatuses", out var containers) && containers.ValueKind == JsonValueKind.Array)
+        {
+            var containerStates = containers.EnumerateArray().ToArray();
+            var ready = containerStates.Count(container => container.TryGetProperty("ready", out var value) && value.ValueKind == JsonValueKind.True);
+            parts.Add($"{ready}/{containerStates.Length} {_localizer["Ready"]}");
+            var restarts = containerStates.Sum(container => container.TryGetProperty("restartCount", out var value) && value.TryGetInt32(out var count) ? count : 0);
+            if (restarts > 0) parts.Add(_localizer["RestartsCount", restarts].Value);
+        }
+        var reason = ReadPodContainerReason(status);
+        if (!string.IsNullOrWhiteSpace(reason)) parts.Add(reason);
+        return string.Join(" · ", parts);
+    }
+
+    private static string? ReadPodContainerReason(JsonElement status)
+    {
+        foreach (var field in new[] { "initContainerStatuses", "containerStatuses", "ephemeralContainerStatuses" })
+            if (status.TryGetProperty(field, out var containers) && containers.ValueKind == JsonValueKind.Array)
+                foreach (var container in containers.EnumerateArray())
+                    if (container.TryGetProperty("state", out var state) && state.ValueKind == JsonValueKind.Object)
+                        foreach (var stateName in new[] { "waiting", "terminated" })
+                            if (state.TryGetProperty(stateName, out var detail) && detail.ValueKind == JsonValueKind.Object
+                                && detail.TryGetProperty("reason", out var reason) && reason.ValueKind == JsonValueKind.String)
+                                return reason.GetString();
+        return null;
+    }
+
+    private static bool IsTerminating(JsonElement metadata) => metadata.TryGetProperty("deletionTimestamp", out var timestamp)
+        && timestamp.ValueKind == JsonValueKind.String;
 
     private static Uri ApiUri(Kubernetes client, string path) => new(client.BaseUri.ToString().TrimEnd('/') + "/" + path.TrimStart('/'));
 
@@ -832,12 +1269,6 @@ public sealed class KubernetesClusterService : IDisposable
             : path.Trim();
         return Path.GetFullPath(Environment.ExpandEnvironmentVariables(candidate));
     }
-
-    private void NotifyChanged() => Changed?.Invoke();
-
-    private void NotifySelectionChanged(KubernetesSelectionChangeKind kind) =>
-        SelectionChanged?.Invoke(new KubernetesSelectionChangedEventArgs(
-            ++_selectionRevision, kind, ActiveConnectionId, CurrentNamespace));
 
     public void Dispose()
     {

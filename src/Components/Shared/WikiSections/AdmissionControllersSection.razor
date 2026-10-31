@@ -1,0 +1,21 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("AdmissionControllers.Block01"),
+        new WikiListItemBlock("AdmissionControllers.Block02"),
+        new WikiListItemBlock("AdmissionControllers.Block03"),
+        new WikiListItemBlock("AdmissionControllers.Block04"),
+        new WikiDiagramItem("""
+flowchart LR
+    U[User] --> API[API Server]
+    API --> AC[Admission]
+    AC --> ETCD[(etcd)]
+"""),
+        new WikiParagraphBlock("AdmissionControllers.Block06")
+    ];
+}

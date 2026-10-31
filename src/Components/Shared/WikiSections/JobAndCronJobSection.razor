@@ -1,0 +1,65 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("JobECronjob.Block01"),
+        new WikiDiagramItem("""
+flowchart TD
+    CJ[CronJob] --> J1[Job for this run]
+    J1 --> P1[Pod]
+    CJ --> J2[Job for next run]
+    J2 --> P2[Pod]
+    P1 --> F[Completed]
+"""),
+        new WikiParagraphBlock("JobECronjob.ControllerChain"),
+        new WikiParagraphBlock("JobECronjob.Block03"),
+        new WikiListItemBlock("JobECronjob.Block04"),
+        new WikiListItemBlock("JobECronjob.Block05"),
+        new WikiListItemBlock("JobECronjob.Block06"),
+        new WikiCodeItem("text", """
+CronJob
+   |
+   +-- Job
+   |    └── Pod
+   |
+   +-- Job
+        └── Pod
+"""),
+        new WikiCodeItem("yaml", """
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: cleanup
+spec:
+  schedule: "0 2 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: cleanup
+              image: busybox:1.36
+              command: ["sh", "-c", "echo cleanup"]
+"""),
+        new WikiCodeItem("yaml", """
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: one-time-report
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: report
+          image: busybox:1.36
+          command: ["sh", "-c", "echo generate report"]
+""")
+    ];
+}

@@ -1,0 +1,28 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("Practical.DeploymentStatefulsetDaemonset.Block01"),
+        new WikiCodeItem("yaml", """
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: api }
+spec:
+  replicas: 3
+  selector: { matchLabels: { app: api } }
+  template:
+    metadata: { labels: { app: api } }
+    spec:
+      containers: [{ name: api, image: example/api:1.0 }]
+"""),
+        new WikiParagraphBlock("Practical.DeploymentStatefulsetDaemonset.Block03"),
+        new WikiReferenceBlock("https://kubernetes.io/docs/concepts/workloads/controllers/deployment/", "Deployment"),
+        new WikiReferenceBlock("https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/", "StatefulSet"),
+        new WikiReferenceBlock("https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/", "DaemonSet"),
+        new WikiReferenceBlock("https://kubernetes.io/docs/concepts/workloads/controllers/", "Jobs")
+    ];
+}

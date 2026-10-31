@@ -1,0 +1,42 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("Namespace.Block01"),
+        new WikiDiagramItem("""
+flowchart TD
+    C[Cluster]
+    C --> NS1[Namespace: dev]
+    C --> NS2[Namespace: staging]
+    C --> NS3[Namespace: prod]
+    NS1 --> D1[Deployments]
+    NS1 --> S1[Services]
+    NS2 --> D2[Deployments]
+    NS2 --> S2[Services]
+    NS3 --> D3[Deployments]
+    NS3 --> S3[Services]
+"""),
+        new WikiParagraphBlock("Namespace.Block03"),
+        new WikiCodeItem("bash", """
+kubectl create namespace dev
+kubectl get pods -n dev
+"""),
+        new WikiParagraphBlock("Namespace.Block05"),
+        new WikiListItemBlock("Namespace.Block06"),
+        new WikiListItemBlock("Namespace.Block07"),
+        new WikiListItemBlock("Namespace.Block08"),
+        new WikiListItemBlock("Namespace.Block09"),
+        new WikiListItemBlock("Namespace.Block10"),
+        new WikiQuoteBlock("Namespace.Block11"),
+        new WikiCodeItem("yaml", """
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: demo
+""")
+    ];
+}

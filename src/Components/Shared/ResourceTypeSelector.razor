@@ -1,0 +1,151 @@
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<div class="resource-type-selector" @ref="_root">
+    <MudTextField T="string" Label="@Label" Variant="Variant.Outlined" Margin="Margin.Normal"
+                  Value="_searchText" ValueChanged="OnSearchTextChanged" Immediate="true"
+                  Placeholder="@SelectionSummary" Adornment="Adornment.End"
+                  AdornmentIcon="@(_open ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+                  OnAdornmentClick="ToggleOptions" @onfocus="OpenOptions"
+                  OnKeyDown="OnKeyDown" Class="resource-type-selector-input" />
+
+    @if (_open)
+    {
+        <MudPaper Class="resource-type-selector-menu" Elevation="8" Outlined="true">
+            <div role="button" tabindex="0" class="resource-type-selector-select-all" @onclick="ToggleVisibleTypesAsync">
+                <input type="checkbox" checked="@(FilteredTypes.Count > 0 && FilteredTypes.All(IsSelected))" tabindex="-1" />
+                <span>@(FilteredTypes.Count > 0 && FilteredTypes.All(IsSelected) ? ClearFilteredText : SelectFilteredText)</span>
+            </div>
+            <div class="resource-type-selector-options">
+                @if (FilteredTypes.Count == 0)
+                {
+                    <div class="resource-type-selector-empty">@EmptyText</div>
+                }
+                else
+                {
+                    @foreach (var type in FilteredTypes)
+                    {
+                        <label @key="ResourceKey(type)" class="resource-type-selector-option">
+                            <input type="checkbox" checked="@IsSelected(type)"
+                                   @onchange="args => ToggleTypeAsync(type, args.Value is true)" />
+                            <span>@Display(type)</span>
+                        </label>
+                    }
+                }
+            </div>
+        </MudPaper>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
+    [Parameter] public IReadOnlyCollection<KubernetesResourceType> AvailableTypes { get; set; } = [];
+    [Parameter] public IReadOnlyCollection<KubernetesResourceType> SelectedTypes { get; set; } = [];
+    [Parameter] public EventCallback<IReadOnlyCollection<KubernetesResourceType>> SelectedTypesChanged { get; set; }
+    [Parameter] public string SelectedCountFormat { get; set; } = "{0} selected";
+    [Parameter] public string SelectFilteredText { get; set; } = "Select all results";
+    [Parameter] public string ClearFilteredText { get; set; } = "Clear selection of results";
+    [Parameter] public string EmptyText { get; set; } = "No matching resource types";
+
+    private string _searchText = string.Empty;
+    private bool _open;
+    private bool _hasParentSelection;
+    private HashSet<KubernetesResourceType> _selected = [];
+    private HashSet<KubernetesResourceType> _lastParentSelection = [];
+    private ElementReference _root;
+    private DotNetObjectReference<ResourceTypeSelector>? _selfReference;
+
+    private IReadOnlyList<KubernetesResourceType> FilteredTypes => AvailableTypes
+        .Where(type => string.IsNullOrWhiteSpace(_searchText) || Display(type).Contains(_searchText, StringComparison.OrdinalIgnoreCase))
+        .OrderBy(Display, StringComparer.OrdinalIgnoreCase)
+        .ToArray();
+
+    private string SelectionSummary => _selected.Count == 0 ? Label : string.Format(SelectedCountFormat, _selected.Count);
+
+    protected override void OnParametersSet()
+    {
+        var incoming = SelectedTypes.ToHashSet();
+        if (!_hasParentSelection || !incoming.SetEquals(_lastParentSelection))
+            _selected = incoming;
+
+        _lastParentSelection = incoming;
+        _hasParentSelection = true;
+    }
+
+    private static string Display(KubernetesResourceType type) => $"{type.Kind} ({type.Name})";
+    private static string ResourceKey(KubernetesResourceType type) => $"{type.GroupVersion}:{type.Name}";
+    private bool IsSelected(KubernetesResourceType type) => _selected.Contains(type);
+
+    private Task OnSearchTextChanged(string value)
+    {
+        _searchText = value;
+        _open = true;
+        return Task.CompletedTask;
+    }
+
+    private void OpenOptions(FocusEventArgs _) => _open = true;
+    private void ToggleOptions() => _open = !_open;
+
+    private async Task ToggleTypeAsync(KubernetesResourceType type, bool selected)
+    {
+        if (selected) _selected.Add(type);
+        else _selected.Remove(type);
+        await NotifySelectionChangedAsync();
+    }
+
+    private async Task ToggleVisibleTypesAsync()
+    {
+        var filtered = FilteredTypes;
+        if (filtered.Count > 0 && filtered.All(IsSelected))
+        {
+            foreach (var type in filtered) _selected.Remove(type);
+        }
+        else
+        {
+            _selected.UnionWith(filtered);
+        }
+
+        await NotifySelectionChangedAsync();
+    }
+
+    private async Task NotifySelectionChangedAsync()
+    {
+        await InvokeAsync(StateHasChanged);
+        await SelectedTypesChanged.InvokeAsync(_selected.ToArray());
+    }
+
+    private void OnKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Escape") CloseOptions();
+        else if (args.Key == "ArrowDown") _open = true;
+    }
+
+    private void CloseOptions()
+    {
+        _open = false;
+        _searchText = string.Empty;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        _selfReference = DotNetObjectReference.Create(this);
+        await JS.InvokeVoidAsync("kvResourceTypeSelector.bind", _root, _selfReference);
+    }
+
+    [JSInvokable]
+    public Task OnClickAway()
+    {
+        if (!_open) return Task.CompletedTask;
+        CloseOptions();
+        return InvokeAsync(StateHasChanged);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try { await JS.InvokeVoidAsync("kvResourceTypeSelector.unbind", _root); }
+        catch (JSDisconnectedException) { }
+        catch (InvalidOperationException) { }
+        _selfReference?.Dispose();
+    }
+}

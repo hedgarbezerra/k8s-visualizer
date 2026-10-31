@@ -1,0 +1,10 @@
+**/.git
+**/.idea
+**/bin
+**/obj
+**/App_Data/*.db
+**/App_Data/*.db-shm
+**/App_Data/*.db-wal
+**/.env
+**/secrets*.yaml
+**/kubeconfig*

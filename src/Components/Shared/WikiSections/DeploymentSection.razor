@@ -1,0 +1,44 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("Deployment.Block01"),
+        new WikiParagraphBlock("Deployment.ControllerChain"),
+        new WikiDiagramItem("""
+flowchart TD
+    D[Deployment]
+    D --> RS[ReplicaSet]
+    RS --> P1[Pod]
+    RS --> P2[Pod]
+    RS --> P3[Pod]
+"""),
+        new WikiParagraphBlock("Deployment.Block03"),
+        new WikiCodeItem("yaml", """
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      containers:
+        - name: api
+          image: my-api:1.0
+"""),
+        new WikiParagraphBlock("Deployment.Block05")
+        ,new WikiInternalLinkBlock("statefulset", "Statefulset.Title"),
+        new WikiInternalLinkBlock("replicaset", "Replicaset.Title"),
+        new WikiInternalLinkBlock("horizontal-pod-autoscaler-hpa", "HorizontalPodAutoscalerHpa.Title")
+    ];
+}

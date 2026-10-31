@@ -1,0 +1,38 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("Networkpolicy.Block01"),
+        new WikiDiagramItem("""
+flowchart LR
+    API[API Pod] -->|allowed| DB[Database Pod]
+    WEB[Web Pod] -->|allowed| API
+    WEB -. blocked .-> DB
+"""),
+        new WikiParagraphBlock("Networkpolicy.Block03"),
+        new WikiCodeItem("yaml", """
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-web
+  namespace: demo
+spec:
+  podSelector:
+    matchLabels:
+      app: web
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: frontend
+      ports:
+        - protocol: TCP
+          port: 8080
+""")
+    ];
+}

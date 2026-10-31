@@ -1,0 +1,45 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("Daemonset.Block01"),
+        new WikiParagraphBlock("Daemonset.ControllerChain"),
+        new WikiDiagramItem("""
+flowchart TD
+    DS[DaemonSet]
+    DS --> N1[Node 1]
+    DS --> N2[Node 2]
+    DS --> N3[Node 3]
+    N1 --> P1[Pod]
+    N2 --> P2[Pod]
+    N3 --> P3[Pod]
+"""),
+        new WikiParagraphBlock("Daemonset.Block03"),
+        new WikiListItemBlock("Daemonset.Block04"),
+        new WikiListItemBlock("Daemonset.Block05"),
+        new WikiListItemBlock("Daemonset.Block06"),
+        new WikiListItemBlock("Daemonset.Block07"),
+        new WikiCodeItem("yaml", """
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: node-agent
+spec:
+  selector:
+    matchLabels:
+      app: node-agent
+  template:
+    metadata:
+      labels:
+        app: node-agent
+    spec:
+      containers:
+        - name: agent
+          image: example/node-agent:1.0
+""")
+    ];
+}

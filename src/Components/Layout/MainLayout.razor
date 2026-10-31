@@ -2,7 +2,7 @@
 @implements IAsyncDisposable
 @inject IJSRuntime JS
 @inject IStringLocalizer<AppStrings> L
-@inject ApplicationCultureService CultureService
+@inject ApplicationEventManager AppEvents
 
 <MudThemeProvider Theme="@_theme" IsDarkMode="@_isDarkMode" />
 <MudPopoverProvider />
@@ -45,7 +45,7 @@
     private ThemePreference _themePreference = ThemePreference.System;
     private DotNetObjectReference<MainLayout>? _selfReference;
 
-    protected override void OnInitialized() => CultureService.CultureChanged += OnCultureChanged;
+    protected override void OnInitialized() => AppEvents.CultureChanged += OnCultureChanged;
 
     private void OnCultureChanged(ApplicationCultureChangedEventArgs change) => _ = InvokeAsync(StateHasChanged);
 
@@ -126,7 +126,7 @@
 
     public async ValueTask DisposeAsync()
     {
-        CultureService.CultureChanged -= OnCultureChanged;
+        AppEvents.CultureChanged -= OnCultureChanged;
         if (_selfReference is not null)
         {
             await JS.InvokeVoidAsync("kvTheme.unsubscribeSystem");

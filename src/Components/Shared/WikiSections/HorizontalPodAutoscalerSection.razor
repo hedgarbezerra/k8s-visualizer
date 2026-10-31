@@ -1,0 +1,55 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("HorizontalPodAutoscalerHpa.Block01"),
+        new WikiParagraphBlock("HorizontalPodAutoscalerHpa.Prerequisites"),
+        new WikiDiagramItem("""
+flowchart LR
+    M[Metrics] --> H[HPA]
+    H --> D[Deployment]
+    D --> P[Pods]
+"""),
+        new WikiParagraphBlock("HorizontalPodAutoscalerHpa.Block03"),
+        new WikiCodeItem("text", """
+CPU baixa
+    ↓
+3 Pods
+CPU alta
+    ↓
+6 Pods
+"""),
+        new WikiParagraphBlock("HorizontalPodAutoscalerHpa.Block05"),
+        new WikiListItemBlock("HorizontalPodAutoscalerHpa.Block06"),
+        new WikiListItemBlock("HorizontalPodAutoscalerHpa.Block07"),
+        new WikiListItemBlock("HorizontalPodAutoscalerHpa.Block08"),
+        new WikiListItemBlock("HorizontalPodAutoscalerHpa.Block09")
+        ,new WikiInternalLinkBlock("vertical-pod-autoscaler-vpa", "VerticalPodAutoscalerVpa.Title"),
+        new WikiInternalLinkBlock("poddisruptionbudget-pdb", "PoddisruptionbudgetPdb.Title"),
+        new WikiInternalLinkBlock("health-probes", "HealthProbes.Title"),
+        new WikiCodeItem("yaml", """
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: web
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: web
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+""")
+    ];
+}

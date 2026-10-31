@@ -1,0 +1,1407 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="VisaoGeral.Title" xml:space="preserve">
+    <value>Overview</value>
+  </data>
+  <data name="VisaoGeral.Block01" xml:space="preserve">
+    <value>Kubernetes runs and manages containerized applications declaratively. You describe the desired state; Kubernetes controllers observe the actual state and work to make it converge. Keep two ideas separate: hierarchy describes ownership and composition; relationships describe resources that select, reference, or control other resources.</value>
+  </data>
+  <data name="VisaoGeral.Group" xml:space="preserve">
+    <value>Groups.Foundations</value>
+  </data>
+  <data name="Cluster.Title" xml:space="preserve">
+    <value>Cluster</value>
+  </data>
+  <data name="Cluster.Block01" xml:space="preserve">
+    <value>A cluster is the complete Kubernetes environment: its control plane, worker nodes, namespaces, workloads, networking, storage, policies, and configuration. It is the context in which Kubernetes resources exist.</value>
+  </data>
+  <data name="Cluster.Group" xml:space="preserve">
+    <value>Groups.Foundations</value>
+  </data>
+  <data name="ControlPlane.Title" xml:space="preserve">
+    <value>Control plane</value>
+  </data>
+  <data name="ControlPlane.Block01" xml:space="preserve">
+    <value>The control plane manages the cluster. Its main components are the API server, etcd, scheduler, and controller manager. The API server is the entry point for clients; etcd stores cluster state; the scheduler assigns Pods to nodes; controllers keep observed state close to desired state.</value>
+  </data>
+  <data name="ControlPlane.Group" xml:space="preserve">
+    <value>Groups.Foundations</value>
+  </data>
+  <data name="WorkerNode.Title" xml:space="preserve">
+    <value>Worker node</value>
+  </data>
+  <data name="WorkerNode.Block01" xml:space="preserve">
+    <value>A Node is a physical or virtual machine that runs workloads. The kubelet communicates with the API server, the container runtime runs containers, and networking components route traffic. A Pod is scheduled onto a Node, but it should not be treated as permanently bound to that machine.</value>
+  </data>
+  <data name="WorkerNode.Group" xml:space="preserve">
+    <value>Groups.Foundations</value>
+  </data>
+  <data name="Namespace.Title" xml:space="preserve">
+    <value>Namespace</value>
+  </data>
+  <data name="Namespace.Block01" xml:space="preserve">
+    <value>A Namespace logically partitions namespaced resources inside a cluster. Teams often use namespaces to separate environments, apply policies, and set quotas. A Namespace is not a machine or virtual machine; one Node can run Pods from several namespaces.</value>
+  </data>
+  <data name="Namespace.Group" xml:space="preserve">
+    <value>Groups.Foundations</value>
+  </data>
+  <data name="Workloads.Title" xml:space="preserve">
+    <value>Workloads</value>
+  </data>
+  <data name="Workloads.Block01" xml:space="preserve">
+    <value>A workload is an application or process Kubernetes must run. Common workload resources are Deployment, StatefulSet, DaemonSet, Job, and CronJob. Each expresses a different lifecycle and scheduling model.</value>
+  </data>
+  <data name="Workloads.Group" xml:space="preserve">
+    <value>Groups.Workloads</value>
+  </data>
+  <data name="Deployment.Title" xml:space="preserve">
+    <value>Deployment</value>
+  </data>
+  <data name="Deployment.Block01" xml:space="preserve">
+    <value>A Deployment manages stateless applications. It declares the desired replica count and Pod template, then creates and updates ReplicaSets. A rolling update replaces Pods gradually while the controller works toward the declared state.</value>
+  </data>
+  <data name="Deployment.Group" xml:space="preserve">
+    <value>Groups.Workloads</value>
+  </data>
+  <data name="Replicaset.Title" xml:space="preserve">
+    <value>ReplicaSet</value>
+  </data>
+  <data name="Replicaset.Block01" xml:space="preserve">
+    <value>A ReplicaSet keeps a requested number of matching Pods running. Deployments normally manage ReplicaSets, so applications are usually changed through a Deployment rather than by editing its ReplicaSet directly.</value>
+  </data>
+  <data name="Replicaset.Group" xml:space="preserve">
+    <value>Groups.Workloads</value>
+  </data>
+  <data name="Pod.Title" xml:space="preserve">
+    <value>Pod</value>
+  </data>
+  <data name="Pod.Block01" xml:space="preserve">
+    <value>A Pod is Kubernetes' smallest deployable unit. It contains one or more containers that share a network identity and can share volumes. Most Pods have one main application container; sidecars are also common. A Pod is scheduled and replaced as a unit.</value>
+  </data>
+  <data name="Pod.Group" xml:space="preserve">
+    <value>Groups.Workloads</value>
+  </data>
+  <data name="Containers.Title" xml:space="preserve">
+    <value>Containers</value>
+  </data>
+  <data name="Containers.Block01" xml:space="preserve">
+    <value>A container is a process running inside a Pod. Kubernetes schedules Pods, not individual containers. Containers in one Pod share the Pod network and may mount the same volumes.</value>
+  </data>
+  <data name="Containers.Group" xml:space="preserve">
+    <value>Groups.Workloads</value>
+  </data>
+  <data name="LabelsESelectors.Title" xml:space="preserve">
+    <value>Labels and selectors</value>
+  </data>
+  <data name="LabelsESelectors.Block01" xml:space="preserve">
+    <value>Labels are key/value metadata attached to objects. Selectors choose objects whose labels match a rule. A label shared by two resources does not itself create a Kubernetes dependency; a resource such as a Service or Deployment must use a matching selector for the label to affect behavior.</value>
+  </data>
+  <data name="LabelsESelectors.Group" xml:space="preserve">
+    <value>Groups.Networking</value>
+  </data>
+  <data name="Service.Title" xml:space="preserve">
+    <value>Service</value>
+  </data>
+  <data name="Service.Block01" xml:space="preserve">
+    <value>Pod addresses can change when Pods are replaced. A Service gives clients a stable address and selects backend Pods by labels. Common types are ClusterIP, NodePort, LoadBalancer, and ExternalName. The selector-to-Pod association is distinct from ownership.</value>
+  </data>
+  <data name="Service.Group" xml:space="preserve">
+    <value>Groups.Networking</value>
+  </data>
+  <data name="IngressEGatewayApi.Title" xml:space="preserve">
+    <value>Ingress and Gateway API</value>
+  </data>
+  <data name="IngressEGatewayApi.Block01" xml:space="preserve">
+    <value>Ingress and Gateway API describe HTTP/HTTPS entry points and route traffic to Services. Ingress is the older, simpler API. Gateway API offers richer role separation and routing features. Neither replaces the Service that provides a stable backend.</value>
+  </data>
+  <data name="IngressEGatewayApi.Group" xml:space="preserve">
+    <value>Groups.Networking</value>
+  </data>
+  <data name="Configmap.Title" xml:space="preserve">
+    <value>ConfigMap</value>
+  </data>
+  <data name="Configmap.Block01" xml:space="preserve">
+    <value>A ConfigMap stores non-sensitive configuration. Pods can consume its keys as environment variables or mounted files. Do not store passwords, tokens, or private keys in a ConfigMap.</value>
+  </data>
+  <data name="Configmap.Group" xml:space="preserve">
+    <value>Groups.Configuration</value>
+  </data>
+  <data name="Secret.Title" xml:space="preserve">
+    <value>Secret</value>
+  </data>
+  <data name="Secret.Block01" xml:space="preserve">
+    <value>A Secret represents sensitive values such as passwords, tokens, certificates, and connection strings. Base64 encoding in the API representation is not encryption. Protection depends on RBAC, transport security, and the cluster's storage encryption configuration. This app hides Secret values by default and only requests them after an explicit reveal action.</value>
+  </data>
+  <data name="Secret.Group" xml:space="preserve">
+    <value>Groups.Configuration</value>
+  </data>
+  <data name="Storage.Title" xml:space="preserve">
+    <value>Storage</value>
+  </data>
+  <data name="Storage.Block01" xml:space="preserve">
+    <value>Persistent storage separates data lifetime from Pod lifetime. A Pod can request storage through a PersistentVolumeClaim; the claim can bind to a PersistentVolume, which represents capacity made available to the cluster.</value>
+  </data>
+  <data name="Storage.Group" xml:space="preserve">
+    <value>Groups.Configuration</value>
+  </data>
+  <data name="Persistentvolumeclaim.Title" xml:space="preserve">
+    <value>PersistentVolumeClaim</value>
+  </data>
+  <data name="Persistentvolumeclaim.Block01" xml:space="preserve">
+    <value>A PersistentVolumeClaim (PVC) is an application's request for storage capacity and access modes. A Pod mounts the claim instead of depending on a specific storage device.</value>
+  </data>
+  <data name="Persistentvolumeclaim.Group" xml:space="preserve">
+    <value>Groups.Configuration</value>
+  </data>
+  <data name="Persistentvolume.Title" xml:space="preserve">
+    <value>PersistentVolume</value>
+  </data>
+  <data name="Persistentvolume.Block01" xml:space="preserve">
+    <value>A PersistentVolume (PV) represents storage capacity in the cluster. It may be provisioned in advance or dynamically for a claim. Its implementation connects Kubernetes to a storage backend.</value>
+  </data>
+  <data name="Persistentvolume.Group" xml:space="preserve">
+    <value>Groups.Configuration</value>
+  </data>
+  <data name="Storageclass.Title" xml:space="preserve">
+    <value>StorageClass</value>
+  </data>
+  <data name="Storageclass.Block01" xml:space="preserve">
+    <value>A StorageClass describes a class of dynamically provisioned storage. A PVC can name a class; a provisioner then creates a matching PV according to that class's parameters and policies.</value>
+  </data>
+  <data name="Storageclass.Group" xml:space="preserve">
+    <value>Groups.Configuration</value>
+  </data>
+  <data name="Statefulset.Title" xml:space="preserve">
+    <value>StatefulSet</value>
+  </data>
+  <data name="Statefulset.Block01" xml:space="preserve">
+    <value>A StatefulSet manages Pods that need stable identities or storage associated with each replica. Names such as database-0 and database-1 remain predictable across replacement. Stateful workloads often need ordered startup and shutdown.</value>
+  </data>
+  <data name="Statefulset.Group" xml:space="preserve">
+    <value>Groups.Stateful</value>
+  </data>
+  <data name="Daemonset.Title" xml:space="preserve">
+    <value>DaemonSet</value>
+  </data>
+  <data name="Daemonset.Block01" xml:space="preserve">
+    <value>A DaemonSet schedules a Pod onto every eligible Node, or onto Nodes matching its scheduling rules. Typical uses include logging, monitoring, networking, and security agents.</value>
+  </data>
+  <data name="Daemonset.Group" xml:space="preserve">
+    <value>Groups.Stateful</value>
+  </data>
+  <data name="JobECronjob.Title" xml:space="preserve">
+    <value>Job and CronJob</value>
+  </data>
+  <data name="JobECronjob.Block01" xml:space="preserve">
+    <value>A Job runs work that should complete, such as a migration or batch task. A CronJob creates Jobs on a schedule. Jobs and their Pods remain separate resources, connected through ownership.</value>
+  </data>
+  <data name="JobECronjob.Group" xml:space="preserve">
+    <value>Groups.Stateful</value>
+  </data>
+  <data name="RequestsELimits.Title" xml:space="preserve">
+    <value>Requests and limits</value>
+  </data>
+  <data name="RequestsELimits.Block01" xml:space="preserve">
+    <value>Requests describe the CPU and memory a container asks the scheduler to reserve. Limits cap the resources it may consume. Requests affect placement; limits affect runtime enforcement.</value>
+  </data>
+  <data name="RequestsELimits.Group" xml:space="preserve">
+    <value>Groups.Stateful</value>
+  </data>
+  <data name="Scheduling.Title" xml:space="preserve">
+    <value>Scheduling</value>
+  </data>
+  <data name="Scheduling.Block01" xml:space="preserve">
+    <value>The scheduler chooses a Node for each unscheduled Pod. It considers resource requests, node availability, affinity rules, taints and tolerations, topology constraints, and other policies. A Pod can remain Pending when no eligible Node is available.</value>
+  </data>
+  <data name="Scheduling.Group" xml:space="preserve">
+    <value>Groups.Scheduling</value>
+  </data>
+  <data name="NodeAffinity.Title" xml:space="preserve">
+    <value>Node affinity</value>
+  </data>
+  <data name="NodeAffinity.Block01" xml:space="preserve">
+    <value>Node affinity expresses required or preferred Node labels for a Pod. Required rules constrain placement; preferred rules guide the scheduler without making a matching Node mandatory.</value>
+  </data>
+  <data name="NodeAffinity.Group" xml:space="preserve">
+    <value>Groups.Scheduling</value>
+  </data>
+  <data name="PodAntiAffinity.Title" xml:space="preserve">
+    <value>Pod anti-affinity</value>
+  </data>
+  <data name="PodAntiAffinity.Block01" xml:space="preserve">
+    <value>Pod anti-affinity can keep related Pods apart, for example by spreading replicas across Nodes. This can reduce the effect of a single machine failure, subject to available capacity and topology rules.</value>
+  </data>
+  <data name="PodAntiAffinity.Group" xml:space="preserve">
+    <value>Groups.Scheduling</value>
+  </data>
+  <data name="TaintsETolerations.Title" xml:space="preserve">
+    <value>Taints and tolerations</value>
+  </data>
+  <data name="TaintsETolerations.Block01" xml:space="preserve">
+    <value>A taint marks a Node so that Pods without a matching toleration are not scheduled there, or may be evicted. A toleration allows a Pod to be considered; it does not by itself force placement on that Node.</value>
+  </data>
+  <data name="TaintsETolerations.Group" xml:space="preserve">
+    <value>Groups.Scheduling</value>
+  </data>
+  <data name="TopologySpreadConstraints.Title" xml:space="preserve">
+    <value>Topology spread constraints</value>
+  </data>
+  <data name="TopologySpreadConstraints.Block01" xml:space="preserve">
+    <value>Topology spread constraints distribute Pods across failure domains such as Nodes or zones. They help avoid concentrating all replicas in one domain, subject to the configured skew and scheduling constraints.</value>
+  </data>
+  <data name="TopologySpreadConstraints.Group" xml:space="preserve">
+    <value>Groups.Scheduling</value>
+  </data>
+  <data name="HealthProbes.Title" xml:space="preserve">
+    <value>Health probes</value>
+  </data>
+  <data name="HealthProbes.Block01" xml:space="preserve">
+    <value>Startup probes allow slow applications time to initialize. Readiness probes determine whether a container should receive traffic. Liveness probes detect a process that should be restarted. These probes answer different questions and should be configured for the application's behavior.</value>
+  </data>
+  <data name="HealthProbes.Group" xml:space="preserve">
+    <value>Groups.Availability</value>
+  </data>
+  <data name="HorizontalPodAutoscalerHpa.Title" xml:space="preserve">
+    <value>Horizontal Pod Autoscaler</value>
+  </data>
+  <data name="HorizontalPodAutoscalerHpa.Block01" xml:space="preserve">
+    <value>The Horizontal Pod Autoscaler (HPA) adjusts a workload's replica count using resource or custom metrics. It needs usable metrics and a scalable target. It adds or removes Pods; it does not resize the resources allocated to each Pod.</value>
+  </data>
+  <data name="HorizontalPodAutoscalerHpa.Group" xml:space="preserve">
+    <value>Groups.Availability</value>
+  </data>
+  <data name="VerticalPodAutoscalerVpa.Title" xml:space="preserve">
+    <value>Vertical Pod Autoscaler</value>
+  </data>
+  <data name="VerticalPodAutoscalerVpa.Block01" xml:space="preserve">
+    <value>The Vertical Pod Autoscaler (VPA) recommends or adjusts CPU and memory requests for Pods. Depending on its mode, applying a recommendation can require Pod replacement. HPA changes the number of Pods; VPA changes per-Pod resource sizing.</value>
+  </data>
+  <data name="VerticalPodAutoscalerVpa.Group" xml:space="preserve">
+    <value>Groups.Availability</value>
+  </data>
+  <data name="PoddisruptionbudgetPdb.Title" xml:space="preserve">
+    <value>PodDisruptionBudget</value>
+  </data>
+  <data name="PoddisruptionbudgetPdb.Block01" xml:space="preserve">
+    <value>A PodDisruptionBudget (PDB) limits voluntary disruptions so a minimum number or percentage of selected Pods remains available. It affects operations such as draining a Node; it does not prevent involuntary failures.</value>
+  </data>
+  <data name="PoddisruptionbudgetPdb.Group" xml:space="preserve">
+    <value>Groups.Availability</value>
+  </data>
+  <data name="Priorityclass.Title" xml:space="preserve">
+    <value>PriorityClass</value>
+  </data>
+  <data name="Priorityclass.Block01" xml:space="preserve">
+    <value>A PriorityClass assigns relative scheduling priority to Pods. When resources are scarce, higher-priority Pods may be scheduled before lower-priority Pods, and preemption may remove lower-priority workloads when allowed.</value>
+  </data>
+  <data name="Priorityclass.Group" xml:space="preserve">
+    <value>Groups.Availability</value>
+  </data>
+  <data name="Serviceaccount.Title" xml:space="preserve">
+    <value>ServiceAccount</value>
+  </data>
+  <data name="Serviceaccount.Block01" xml:space="preserve">
+    <value>A ServiceAccount is an identity that a Pod can use when calling the Kubernetes API. Its effective permissions come from authorization rules such as RoleBindings and ClusterRoleBindings, not from the ServiceAccount object alone.</value>
+  </data>
+  <data name="Serviceaccount.Group" xml:space="preserve">
+    <value>Groups.Security</value>
+  </data>
+  <data name="Rbac.Title" xml:space="preserve">
+    <value>RBAC</value>
+  </data>
+  <data name="Rbac.Block01" xml:space="preserve">
+    <value>Role-based access control (RBAC) grants verbs such as get, list, watch, create, patch, and delete on specified resources and scopes. Roles and RoleBindings are namespace-scoped; ClusterRoles and ClusterRoleBindings can grant cluster-wide permissions.</value>
+  </data>
+  <data name="Rbac.Group" xml:space="preserve">
+    <value>Groups.Security</value>
+  </data>
+  <data name="Securitycontext.Title" xml:space="preserve">
+    <value>SecurityContext</value>
+  </data>
+  <data name="Securitycontext.Block01" xml:space="preserve">
+    <value>A SecurityContext configures process and container security, including user and group IDs, Linux capabilities, privilege escalation, and read-only filesystems. Pod-level and container-level settings can have different scope.</value>
+  </data>
+  <data name="Securitycontext.Group" xml:space="preserve">
+    <value>Groups.Security</value>
+  </data>
+  <data name="Networkpolicy.Title" xml:space="preserve">
+    <value>NetworkPolicy</value>
+  </data>
+  <data name="Networkpolicy.Block01" xml:space="preserve">
+    <value>A NetworkPolicy selects Pods and describes allowed ingress or egress traffic. Enforcement depends on a network plugin that supports NetworkPolicy. Policies are additive, and their effect depends on the selected Pods and namespace.</value>
+  </data>
+  <data name="Networkpolicy.Group" xml:space="preserve">
+    <value>Groups.Security</value>
+  </data>
+  <data name="Resourcequota.Title" xml:space="preserve">
+    <value>ResourceQuota</value>
+  </data>
+  <data name="Resourcequota.Block01" xml:space="preserve">
+    <value>A ResourceQuota limits aggregate resource consumption or object counts within a Namespace. It can constrain CPU, memory, storage, and the number of selected resource types.</value>
+  </data>
+  <data name="Resourcequota.Group" xml:space="preserve">
+    <value>Groups.Security</value>
+  </data>
+  <data name="Limitrange.Title" xml:space="preserve">
+    <value>LimitRange</value>
+  </data>
+  <data name="Limitrange.Block01" xml:space="preserve">
+    <value>A LimitRange sets per-object minimums, maximums, or defaults for resources in a Namespace. ResourceQuota limits the namespace total; LimitRange governs individual Pods, containers, or claims.</value>
+  </data>
+  <data name="Limitrange.Group" xml:space="preserve">
+    <value>Groups.Security</value>
+  </data>
+  <data name="CrdCustomResourceDefinition.Title" xml:space="preserve">
+    <value>CustomResourceDefinition</value>
+  </data>
+  <data name="CrdCustomResourceDefinition.Block01" xml:space="preserve">
+    <value>A CustomResourceDefinition (CRD) adds a new kind to the Kubernetes API. Once installed, users can create custom resources that follow the CRD schema. A CRD defines a type; an operator or controller usually implements its behavior.</value>
+  </data>
+  <data name="CrdCustomResourceDefinition.Group" xml:space="preserve">
+    <value>Groups.Operations</value>
+  </data>
+  <data name="Controller.Title" xml:space="preserve">
+    <value>Controller</value>
+  </data>
+  <data name="Controller.Block01" xml:space="preserve">
+    <value>A controller watches API objects and repeatedly compares desired state with observed state. It takes actions to reduce the difference. Controllers are the mechanism behind Deployments, StatefulSets, and many other Kubernetes features.</value>
+  </data>
+  <data name="Controller.Group" xml:space="preserve">
+    <value>Groups.Operations</value>
+  </data>
+  <data name="Operator.Title" xml:space="preserve">
+    <value>Operator</value>
+  </data>
+  <data name="Operator.Block01" xml:space="preserve">
+    <value>An Operator combines CRDs and controllers with application-specific operational knowledge. It can automate tasks such as provisioning, backup, recovery, replication, and upgrades for a particular system.</value>
+  </data>
+  <data name="Operator.Group" xml:space="preserve">
+    <value>Groups.Operations</value>
+  </data>
+  <data name="AdmissionControllers.Title" xml:space="preserve">
+    <value>Admission controllers</value>
+  </data>
+  <data name="AdmissionControllers.Block01" xml:space="preserve">
+    <value>Admission controllers inspect API requests after authentication and authorization but before persistence. They can validate, mutate, or reject objects. They are commonly used to enforce policy and set safe defaults.</value>
+  </data>
+  <data name="AdmissionControllers.Group" xml:space="preserve">
+    <value>Groups.Operations</value>
+  </data>
+  <data name="Helm.Title" xml:space="preserve">
+    <value>Helm</value>
+  </data>
+  <data name="Helm.Block01" xml:space="preserve">
+    <value>Helm packages Kubernetes manifests into Charts with templates and configurable values. It manages releases and rendered resources; it does not replace Kubernetes controllers or guarantee that an application is healthy.</value>
+  </data>
+  <data name="Helm.Group" xml:space="preserve">
+    <value>Groups.Operations</value>
+  </data>
+  <data name="Kustomize.Title" xml:space="preserve">
+    <value>Kustomize</value>
+  </data>
+  <data name="Kustomize.Block01" xml:space="preserve">
+    <value>Kustomize composes and customizes Kubernetes manifests without requiring a template language. A common layout has a reusable base and environment-specific overlays such as development, staging, and production.</value>
+  </data>
+  <data name="Kustomize.Group" xml:space="preserve">
+    <value>Groups.Operations</value>
+  </data>
+  <data name="ArgoCdEGitops.Title" xml:space="preserve">
+    <value>Argo CD and GitOps</value>
+  </data>
+  <data name="ArgoCdEGitops.Block01" xml:space="preserve">
+    <value>GitOps treats a version-controlled repository as a source of desired configuration. Argo CD compares repository state with cluster state and reconciles differences according to its configuration. The visualizer displays resources; it does not perform GitOps synchronization.</value>
+  </data>
+  <data name="ArgoCdEGitops.Group" xml:space="preserve">
+    <value>Groups.Operations</value>
+  </data>
+  <data name="Observabilidade.Title" xml:space="preserve">
+    <value>Observability</value>
+  </data>
+  <data name="Observabilidade.Block01" xml:space="preserve">
+    <value>Observability combines logs, metrics, traces, and events to understand system behavior. Kubernetes events describe notable object and control-plane activity; application logs describe process output. Metrics and traces require their own collection systems.</value>
+  </data>
+  <data name="Observabilidade.Group" xml:space="preserve">
+    <value>Groups.Operations</value>
+  </data>
+  <data name="ComoOsConceitosSeRelacionam.Title" xml:space="preserve">
+    <value>How the concepts fit together</value>
+  </data>
+  <data name="ComoOsConceitosSeRelacionam.Block01" xml:space="preserve">
+    <value>Workloads create and manage Pods. Services select Pods to provide stable networking. Ingress or Gateway routes traffic to Services. Pods consume configuration and storage; policies constrain their access; schedulers place them on Nodes. These links have different meanings and should not all be read as ownership.</value>
+  </data>
+  <data name="ComoOsConceitosSeRelacionam.Group" xml:space="preserve">
+    <value>Groups.Architecture</value>
+  </data>
+  <data name="HierarquiaMentalRecomendada.Title" xml:space="preserve">
+    <value>A useful mental model</value>
+  </data>
+  <data name="HierarquiaMentalRecomendada.Block01" xml:space="preserve">
+    <value>Start with structural ownership: a Deployment owns ReplicaSets, and ReplicaSets own Pods. Then add other relationships: Services select Pods; routes point to Services; Pods reference configuration, identities, and claims; policies select workloads. Shared labels can help visualize an association, but a label match alone does not prove that one resource depends on another.</value>
+  </data>
+  <data name="HierarquiaMentalRecomendada.Group" xml:space="preserve">
+    <value>Groups.Architecture</value>
+  </data>
+  <data name="ArquiteturaDeUmaAplicacaoTipica.Title" xml:space="preserve">
+    <value>A typical application architecture</value>
+  </data>
+  <data name="ArquiteturaDeUmaAplicacaoTipica.Block01" xml:space="preserve">
+    <value>A .NET application might use a Gateway or Ingress to route requests to an API Service. That Service selects API Pods managed by a Deployment. The Pods consume ConfigMaps and Secrets, mount a PVC, and connect to a database Service backed by a StatefulSet and persistent storage. An HPA can adjust the Deployment's replica count, while a PDB limits voluntary disruption.</value>
+  </data>
+  <data name="ArquiteturaDeUmaAplicacaoTipica.Group" xml:space="preserve">
+    <value>Groups.Architecture</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Title" xml:space="preserve">
+    <value>Recommended learning order</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block01" xml:space="preserve">
+    <value>Level 1 — Structure</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block02" xml:space="preserve">
+    <value>Cluster, Control Plane, Node, Namespace, Pod, and Container.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block03" xml:space="preserve">
+    <value>Level 2 — Workloads</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block04" xml:space="preserve">
+    <value>Deployment, ReplicaSet, StatefulSet, DaemonSet, Job, and CronJob.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block05" xml:space="preserve">
+    <value>Level 3 — Communication</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block06" xml:space="preserve">
+    <value>Labels, selectors, Services, Ingress, and Gateway API.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block07" xml:space="preserve">
+    <value>Level 4 — Configuration and data</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block08" xml:space="preserve">
+    <value>ConfigMap, Secret, Volume, PVC, PV, and StorageClass.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block09" xml:space="preserve">
+    <value>Level 5 — Scheduling and resources</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block10" xml:space="preserve">
+    <value>Requests, limits, Scheduler, affinity, anti-affinity, taints, tolerations, and topology spread constraints.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block11" xml:space="preserve">
+    <value>Level 6 — Resilience and scaling</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block12" xml:space="preserve">
+    <value>Probes, HPA, VPA, PDB, and PriorityClass.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block13" xml:space="preserve">
+    <value>Level 7 — Security</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block14" xml:space="preserve">
+    <value>ServiceAccount, RBAC, SecurityContext, NetworkPolicy, ResourceQuota, and LimitRange.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block15" xml:space="preserve">
+    <value>Level 8 — Extensibility</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block16" xml:space="preserve">
+    <value>CRDs, controllers, operators, and admission controllers.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block17" xml:space="preserve">
+    <value>Level 9 — Delivery and operations</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block18" xml:space="preserve">
+    <value>Helm, Kustomize, Argo CD, GitOps, and observability.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Group" xml:space="preserve">
+    <value>Groups.Architecture</value>
+  </data>
+  <data name="ResumoFinal.Title" xml:space="preserve">
+    <value>Summary</value>
+  </data>
+  <data name="ResumoFinal.Block02" xml:space="preserve">
+    <value>Keep the distinction between structure and relationships: Cluster is the broadest context; Nodes and Namespaces belong to it; workloads in Namespaces create Pods; Pods run Containers. Many other resources point to, select, configure, or constrain these objects rather than forming ownership hierarchy.</value>
+  </data>
+  <data name="ResumoFinal.Group" xml:space="preserve">
+    <value>Groups.Architecture</value>
+  </data>
+  <data name="Wiki.Contents" xml:space="preserve">
+    <value>On this page</value>
+  </data>
+  <data name="Wiki.BackToTop" xml:space="preserve">
+    <value>Back to top</value>
+  </data>
+  <data name="Wiki.CopyCode" xml:space="preserve">
+    <value>Copy code</value>
+  </data>
+  <data name="Wiki.CopiedCode" xml:space="preserve">
+    <value>Copied</value>
+  </data>
+  <data name="Wiki.DiagramError" xml:space="preserve">
+    <value>The diagram could not be rendered.</value>
+  </data>
+  <data name="Wiki.Support" xml:space="preserve">
+    <value>Wiki and support</value>
+  </data>
+  <data name="Wiki.HeroTitle" xml:space="preserve">
+    <value>Kubernetes fundamentals and advanced concepts</value>
+  </data>
+  <data name="Wiki.HeroDescription" xml:space="preserve">
+    <value>Concepts, relationships, and practical decisions for working with Kubernetes.</value>
+  </data>
+  <data name="Wiki.Intro01" xml:space="preserve">
+    <value>This local guide explains the Kubernetes concepts shown in the visualizer. It covers cluster architecture, workloads, networking, storage, scheduling, security, extensibility, and operations.</value>
+  </data>
+  <data name="Groups.Foundations" xml:space="preserve">
+    <value>Cluster foundations</value>
+  </data>
+  <data name="Groups.Workloads" xml:space="preserve">
+    <value>Workloads and containers</value>
+  </data>
+  <data name="Groups.Networking" xml:space="preserve">
+    <value>Networking and service discovery</value>
+  </data>
+  <data name="Groups.Configuration" xml:space="preserve">
+    <value>Configuration and storage</value>
+  </data>
+  <data name="Groups.Stateful" xml:space="preserve">
+    <value>Stateful and batch workloads</value>
+  </data>
+  <data name="Groups.Scheduling" xml:space="preserve">
+    <value>Scheduling and placement</value>
+  </data>
+  <data name="Groups.Availability" xml:space="preserve">
+    <value>Health, scaling, and availability</value>
+  </data>
+  <data name="Groups.Security" xml:space="preserve">
+    <value>Security and policies</value>
+  </data>
+  <data name="Groups.Operations" xml:space="preserve">
+    <value>Extensibility and operations</value>
+  </data>
+  <data name="Groups.Architecture" xml:space="preserve">
+    <value>Architecture and learning path</value>
+  </data>
+  <data name="Wiki.IntroTitle" xml:space="preserve">
+    <value>Kubernetes fundamentals and advanced concepts</value>
+  </data>
+  <data name="Wiki.IntroDescription" xml:space="preserve">
+    <value>Understand how resources relate and choose the right abstraction for each workload.</value>
+  </data>
+  <data name="Practical.DeploymentStatefulsetDaemonset.Title" xml:space="preserve">
+    <value>Deployment vs StatefulSet vs DaemonSet</value>
+  </data>
+  <data name="Practical.DeploymentStatefulsetDaemonset.Block01" xml:space="preserve">
+    <value>Use a Deployment for interchangeable replicas. StatefulSet provides ordinal identity and can create one PVC per replica; it does not replicate data or make an application highly available by itself. DaemonSet runs on each eligible Node. Use Job for finite work and CronJob to create Jobs on a schedule. A ReplicaSet is normally managed by a Deployment.</value>
+  </data>
+  <data name="Practical.DeploymentStatefulsetDaemonset.Block03" xml:space="preserve">
+    <value>References: Deployment, StatefulSet, DaemonSet, and Jobs.</value>
+  </data>
+  <data name="Practical.ServiceIngressGateway.Title" xml:space="preserve">
+    <value>Service, Ingress, and Gateway API</value>
+  </data>
+  <data name="Practical.ServiceIngressGateway.Block01" xml:space="preserve">
+    <value>A Service provides a stable address and selects Pods by labels. Ingress/Gateway define external routes to Services. Ingress needs a controller; its API is frozen, and Kubernetes recommends considering Gateway API for new routing features.</value>
+  </data>
+  <data name="Practical.ServiceIngressGateway.Block03" xml:space="preserve">
+    <value>References: Service, Ingress, and Gateway API.</value>
+  </data>
+  <data name="Practical.ConfigurationIdentityPermissions.Title" xml:space="preserve">
+    <value>Configuration, identity, and permissions</value>
+  </data>
+  <data name="Practical.ConfigurationIdentityPermissions.Block01" xml:space="preserve">
+    <value>A ConfigMap stores non-sensitive settings; a Secret represents sensitive data, but Base64 is not encryption. A ServiceAccount identifies a Pod. Role/ClusterRole define permissions; RoleBinding/ClusterRoleBinding associate subjects with roles.</value>
+  </data>
+  <data name="Practical.ConfigurationIdentityPermissions.Block03" xml:space="preserve">
+    <value>Use fictional credentials in examples. References: ConfigMap, Secret, ServiceAccount, and RBAC.</value>
+  </data>
+  <data name="Practical.PvcPvStorageclass.Title" xml:space="preserve">
+    <value>PVC, PV, and StorageClass</value>
+  </data>
+  <data name="Practical.PvcPvStorageclass.Block01" xml:space="preserve">
+    <value>Applications request storage with a PVC. The cluster binds the claim to an existing PV or provisions one dynamically according to a StorageClass. Users usually create PVCs; administrators and provisioners manage PVs. Local volumes depend on a specific Node.</value>
+  </data>
+  <data name="Practical.PvcPvStorageclass.Block03" xml:space="preserve">
+    <value>References: Persistent Volumes, StorageClass, and dynamic provisioning.</value>
+  </data>
+  <data name="Practical.ScalingHealthAvailability.Title" xml:space="preserve">
+    <value>Scaling, health, and availability</value>
+  </data>
+  <data name="Practical.ScalingHealthAvailability.Block01" xml:space="preserve">
+    <value>HPA changes replica count based on metrics; VPA recommends or changes per-Pod requests/limits and is usually installed separately; PDB limits voluntary disruptions. Requests/limits and probes configure a container/Pod; they are not controller resources.</value>
+  </data>
+  <data name="Practical.ScalingHealthAvailability.Block03" xml:space="preserve">
+    <value>References: HPA, probes, disruptions/PDB, and VPA.</value>
+  </data>
+  <data name="Practical.PoliciesScheduling.Title" xml:space="preserve">
+    <value>Policies and scheduling</value>
+  </data>
+  <data name="Practical.PoliciesScheduling.Block01" xml:space="preserve">
+    <value>NetworkPolicy selects Pods and requires a plugin that enforces it. ResourceQuota limits namespace totals; LimitRange sets per-object defaults and bounds. PriorityClass affects scheduling priority; affinity, taints/tolerations, and topology spread influence Pod placement.</value>
+  </data>
+  <data name="Practical.PoliciesScheduling.Block03" xml:space="preserve">
+    <value>References: NetworkPolicy, ResourceQuota, LimitRange, and scheduling.</value>
+  </data>
+  <data name="Practical.ExtensibilityDelivery.Title" xml:space="preserve">
+    <value>Extensibility and delivery</value>
+  </data>
+  <data name="Practical.ExtensibilityDelivery.Block01" xml:space="preserve">
+    <value>A CRD adds an API type; a controller/Operator implements its behavior. Helm packages templates, Kustomize composes overlays, and Argo CD reconciles manifests from Git. These tools have different roles and do not replace Deployment/StatefulSet.</value>
+  </data>
+  <data name="Practical.ExtensibilityDelivery.Block03" xml:space="preserve">
+    <value>References: Custom Resources/CRD, Helm, Kustomize, and Argo CD.</value>
+  </data>
+  <data name="Practical.NamespacePodReplicasetLabels.Title" xml:space="preserve">
+    <value>Namespace, Pod, ReplicaSet, labels, and selectors</value>
+  </data>
+  <data name="Practical.NamespacePodReplicasetLabels.Block01" xml:space="preserve">
+    <value>A Namespace separates names and policies; a Pod is the executable unit; a ReplicaSet maintains selected Pods but should usually be managed by a Deployment. Labels are metadata and only affect behavior when a selector uses them.</value>
+  </data>
+  <data name="Practical.NamespacePodReplicasetLabels.Block02" xml:space="preserve">
+    <value>Clusters and Nodes appear in the graph, but their creation depends on the distribution and infrastructure provider; there is no portable application manifest to create them in every environment. Check your provider's docs and the Kubernetes Nodes guide.</value>
+  </data>
+  <data name="Practical.NamespacePodReplicasetLabels.Block04" xml:space="preserve">
+    <value>References: Namespaces, Pods, ReplicaSets, and labels/selectors.</value>
+  </data>
+  <data name="Practical.PriorityPlacement.Title" xml:space="preserve">
+    <value>PriorityClass and placement rules</value>
+  </data>
+  <data name="Practical.PriorityPlacement.Block01" xml:space="preserve">
+    <value>PriorityClass ranks Pods relative to each other; it does not reserve capacity. Affinity and topology spread guide or constrain placement; tolerations allow a Pod to tolerate taints without forcing a specific Node.</value>
+  </data>
+  <data name="Practical.PriorityPlacement.Block03" xml:space="preserve">
+    <value>References: PriorityClass, Node affinity, and topology spread.</value>
+  </data>
+  <data name="Practical.PackagingDelivery.Title" xml:space="preserve">
+    <value>Packaging and delivery commands</value>
+  </data>
+  <data name="Practical.PackagingDelivery.Block02" xml:space="preserve">
+    <value>The first command installs/upgrades a release; the second applies a Kustomize overlay; the third reads an already configured Argo CD Application. Review changes before syncing GitOps.</value>
+  </data>
+  <data name="Groups.PracticalExamples" xml:space="preserve">
+    <value>Practical examples</value>
+  </data>
+  <data name="Secret.ExternalIntro" xml:space="preserve">
+    <value>To keep the source value outside the cluster, use an operator or driver configured with a least-privilege identity. Both require specific permissions in the external provider and the cluster.</value>
+  </data>
+  <data name="Secret.EsoTitle" xml:space="preserve">
+    <value>External Secrets Operator</value>
+  </data>
+  <data name="Secret.EsoText" xml:space="preserve">
+    <value>ESO reads an external provider and synchronizes values into a Kubernetes Secret. It fits applications that already consume Secrets through environment variables or volumes. It requires the operator, a configured SecretStore/ClusterSecretStore, and controller permissions to create or update the target Secret.</value>
+  </data>
+  <data name="Secret.CsiTitle" xml:space="preserve">
+    <value>Secrets Store CSI Driver</value>
+  </data>
+  <data name="Secret.CsiText" xml:space="preserve">
+    <value>The CSI driver mounts values as files in a Pod through a SecretProviderClass. It fits applications that read files and policies that aim to avoid an API-server Secret copy. It requires the driver and provider plugin, an authorized Pod identity, and node mount permissions.</value>
+  </data>
+  <data name="Secret.ChoiceTitle" xml:space="preserve">
+    <value>Choosing between them</value>
+  </data>
+  <data name="Secret.ChoiceText" xml:space="preserve">
+    <value>Use ESO to synchronize into the native Secret model and simplify integration with existing applications. Use CSI to mount files without creating that copy by default. Optional CSI synchronization into Kubernetes Secrets changes this property and should be enabled deliberately. In both cases, limit RBAC and configure encryption at rest; Base64 is not encryption.</value>
+  </data>
+  <data name="Secret.NativeCompareTitle" xml:space="preserve">
+    <value>Kubernetes Secret</value>
+  </data>
+  <data name="Secret.NativeCompareText" xml:space="preserve">
+    <value>Simpler and broadly integrated. The value passes through the API server and is stored in the cluster; strict RBAC and configured encryption at rest are required.</value>
+  </data>
+  <data name="Secret.ExternalCompareTitle" xml:space="preserve">
+    <value>External source (ESO or CSI)</value>
+  </data>
+  <data name="Secret.ExternalCompareText" xml:space="preserve">
+    <value>Keeps the external store as the source and integrates provider identity/rotation. It adds cluster components to operate, identity configuration, and a provider dependency.</value>
+  </data>
+  <data name="VisaoGeral.Block03" xml:space="preserve">
+    <value>Kubernetes runs and manages containerized applications declaratively. You describe the desired state; Kubernetes controllers observe the actual state and work to make it converge. Keep two ideas separate: **hierarchy** describes ownership and composition; **relationships** describe resources that select, reference, or control other resources.</value>
+  </data>
+  <data name="VisaoGeral.Block04" xml:space="preserve">
+    <value>Kubernetes runs and manages containerized applications declaratively.</value>
+  </data>
+  <data name="VisaoGeral.Block05" xml:space="preserve">
+    <value>You describe the desired state; Kubernetes controllers observe the actual state and work to make it converge.</value>
+  </data>
+  <data name="Cluster.Block03" xml:space="preserve">
+    <value>A cluster is the complete Kubernetes environment: its control plane, worker nodes, namespaces, workloads, networking, storage, policies, and configuration. It is the context in which Kubernetes resources exist.</value>
+  </data>
+  <data name="Cluster.Block04" xml:space="preserve">
+    <value>A cluster is the complete Kubernetes environment: its control plane, worker nodes, namespaces, workloads, networking, storage, policies, and configuration.</value>
+  </data>
+  <data name="Cluster.Block05" xml:space="preserve">
+    <value>It is the context in which Kubernetes resources exist.</value>
+  </data>
+  <data name="Cluster.Block06" xml:space="preserve">
+    <value>A cluster is the complete Kubernetes environment: its control plane, worker nodes, namespaces, workloads, networking, storage, policies, and configuration.</value>
+  </data>
+  <data name="Cluster.Block07" xml:space="preserve">
+    <value>It is the context in which Kubernetes resources exist.</value>
+  </data>
+  <data name="Cluster.Block08" xml:space="preserve">
+    <value>A cluster is the complete Kubernetes environment: its control plane, worker nodes, namespaces, workloads, networking, storage, policies, and configuration.</value>
+  </data>
+  <data name="Cluster.Block09" xml:space="preserve">
+    <value>It is the context in which Kubernetes resources exist.</value>
+  </data>
+  <data name="Cluster.Block10" xml:space="preserve">
+    <value>A cluster is the complete Kubernetes environment: its control plane, worker nodes, namespaces, workloads, networking, storage, policies, and configuration.</value>
+  </data>
+  <data name="Cluster.Block11" xml:space="preserve">
+    <value>It is the context in which Kubernetes resources exist.</value>
+  </data>
+  <data name="ControlPlane.Block02" xml:space="preserve">
+    <value>The control plane manages the cluster.</value>
+  </data>
+  <data name="ControlPlane.Block03" xml:space="preserve">
+    <value>Its main components are the API server, etcd, scheduler, and controller manager.</value>
+  </data>
+  <data name="ControlPlane.Block04" xml:space="preserve">
+    <value>The API server is the entry point for clients; etcd stores cluster state; the scheduler assigns Pods to nodes; controllers keep observed state close to desired state.</value>
+  </data>
+  <data name="ControlPlane.Block05" xml:space="preserve">
+    <value>The control plane manages the cluster.</value>
+  </data>
+  <data name="ControlPlane.Block07" xml:space="preserve">
+    <value>Control plane</value>
+  </data>
+  <data name="ControlPlane.Block08" xml:space="preserve">
+    <value>The control plane manages the cluster. Its main components are the API server, etcd, scheduler, and controller manager. The API server is the entry point for clients; etcd stores cluster state; the scheduler assigns Pods to nodes; controllers keep observed state close to desired state.</value>
+  </data>
+  <data name="ControlPlane.Block10" xml:space="preserve">
+    <value>The API server is the entry point for clients; etcd stores cluster state; the scheduler assigns Pods to nodes; controllers keep observed state close to desired state.</value>
+  </data>
+  <data name="ControlPlane.Block11" xml:space="preserve">
+    <value>Control plane</value>
+  </data>
+  <data name="ControlPlane.Block12" xml:space="preserve">
+    <value>The control plane manages the cluster.</value>
+  </data>
+  <data name="ControlPlane.Block13" xml:space="preserve">
+    <value>Control plane</value>
+  </data>
+  <data name="ControlPlane.Block14" xml:space="preserve">
+    <value>Its main components are the API server, etcd, scheduler, and controller manager.</value>
+  </data>
+  <data name="ControlPlane.Block15" xml:space="preserve">
+    <value>Control plane</value>
+  </data>
+  <data name="ControlPlane.Block16" xml:space="preserve">
+    <value>The API server is the entry point for clients; etcd stores cluster state; the scheduler assigns Pods to nodes; controllers keep observed state close to desired state.</value>
+  </data>
+  <data name="WorkerNode.Block03" xml:space="preserve">
+    <value>A Node is a physical or virtual machine that runs workloads. The kubelet communicates with the API server, the container runtime runs containers, and networking components route traffic. A Pod is scheduled onto a Node, but it should not be treated as permanently bound to that machine.</value>
+  </data>
+  <data name="WorkerNode.Block04" xml:space="preserve">
+    <value>A Node is a physical or virtual machine that runs workloads.</value>
+  </data>
+  <data name="WorkerNode.Block05" xml:space="preserve">
+    <value>The kubelet communicates with the API server, the container runtime runs containers, and networking components route traffic.</value>
+  </data>
+  <data name="WorkerNode.Block06" xml:space="preserve">
+    <value>A Pod is scheduled onto a Node, but it should not be treated as permanently bound to that machine.</value>
+  </data>
+  <data name="Namespace.Block03" xml:space="preserve">
+    <value>A Namespace logically partitions namespaced resources inside a cluster. Teams often use namespaces to separate environments, apply policies, and set quotas. A Namespace is not a machine or virtual machine; one Node can run Pods from several namespaces.</value>
+  </data>
+  <data name="Namespace.Block05" xml:space="preserve">
+    <value>A Namespace is not a machine or virtual machine; one Node can run Pods from several namespaces.</value>
+  </data>
+  <data name="Namespace.Block06" xml:space="preserve">
+    <value>A Namespace logically partitions namespaced resources inside a cluster.</value>
+  </data>
+  <data name="Namespace.Block07" xml:space="preserve">
+    <value>Teams often use namespaces to separate environments, apply policies, and set quotas.</value>
+  </data>
+  <data name="Namespace.Block08" xml:space="preserve">
+    <value>A Namespace is not a machine or virtual machine; one Node can run Pods from several namespaces.</value>
+  </data>
+  <data name="Namespace.Block09" xml:space="preserve">
+    <value>A Namespace logically partitions namespaced resources inside a cluster.</value>
+  </data>
+  <data name="Namespace.Block10" xml:space="preserve">
+    <value>Teams often use namespaces to separate environments, apply policies, and set quotas.</value>
+  </data>
+  <data name="Namespace.Block11" xml:space="preserve">
+    <value>A Namespace logically partitions namespaced resources inside a cluster.</value>
+  </data>
+  <data name="Workloads.Block02" xml:space="preserve">
+    <value>A workload is an application or process Kubernetes must run.</value>
+  </data>
+  <data name="Workloads.Block03" xml:space="preserve">
+    <value>Common workload resources are Deployment, StatefulSet, DaemonSet, Job, and CronJob.</value>
+  </data>
+  <data name="Workloads.Block04" xml:space="preserve">
+    <value>Each expresses a different lifecycle and scheduling model.</value>
+  </data>
+  <data name="Workloads.Block05" xml:space="preserve">
+    <value>A workload is an application or process Kubernetes must run.</value>
+  </data>
+  <data name="Workloads.Block06" xml:space="preserve">
+    <value>Common workload resources are Deployment, StatefulSet, DaemonSet, Job, and CronJob.</value>
+  </data>
+  <data name="Deployment.Block03" xml:space="preserve">
+    <value>A Deployment manages stateless applications. It declares the desired replica count and Pod template, then creates and updates ReplicaSets. A rolling update replaces Pods gradually while the controller works toward the declared state.</value>
+  </data>
+  <data name="Deployment.Block05" xml:space="preserve">
+    <value>A rolling update replaces Pods gradually while the controller works toward the declared state.</value>
+  </data>
+  <data name="Replicaset.Block03" xml:space="preserve">
+    <value>A ReplicaSet keeps a requested number of matching Pods running. Deployments normally manage ReplicaSets, so applications are usually changed through a Deployment rather than by editing its ReplicaSet directly.</value>
+  </data>
+  <data name="Pod.Block02" xml:space="preserve">
+    <value>A Pod is Kubernetes' smallest deployable unit.</value>
+  </data>
+  <data name="Pod.Block03" xml:space="preserve">
+    <value>It contains one or more containers that share a network identity and can share volumes.</value>
+  </data>
+  <data name="Pod.Block04" xml:space="preserve">
+    <value>Most Pods have one main application container; sidecars are also common.</value>
+  </data>
+  <data name="Pod.Block05" xml:space="preserve">
+    <value>A Pod is scheduled and replaced as a unit.</value>
+  </data>
+  <data name="Pod.Block07" xml:space="preserve">
+    <value>A Pod is Kubernetes' smallest deployable unit. It contains one or more containers that share a network identity and can share volumes. Most Pods have one main application container; sidecars are also common. A Pod is scheduled and replaced as a unit.</value>
+  </data>
+  <data name="Pod.Block09" xml:space="preserve">
+    <value>Most Pods have one main application container; sidecars are also common.</value>
+  </data>
+  <data name="Containers.Block03" xml:space="preserve">
+    <value>A container is a process running inside a Pod. Kubernetes schedules Pods, not individual containers. Containers in one Pod share the Pod network and may mount the same volumes.</value>
+  </data>
+  <data name="LabelsESelectors.Block03" xml:space="preserve">
+    <value>Labels are key/value metadata attached to objects. Selectors choose objects whose labels match a rule. A label shared by two resources does not itself create a Kubernetes dependency; a resource such as a Service or Deployment must use a matching selector for the label to affect behavior.</value>
+  </data>
+  <data name="LabelsESelectors.Block05" xml:space="preserve">
+    <value>A label shared by two resources does not itself create a Kubernetes dependency; a resource such as a Service or Deployment must use a matching selector for the label to affect behavior.</value>
+  </data>
+  <data name="Service.Block03" xml:space="preserve">
+    <value>Pod addresses can change when Pods are replaced. A Service gives clients a stable address and selects backend Pods by labels. Common types are ClusterIP, NodePort, LoadBalancer, and ExternalName. The selector-to-Pod association is distinct from ownership.</value>
+  </data>
+  <data name="Service.Block04" xml:space="preserve">
+    <value>Pod addresses can change when Pods are replaced.</value>
+  </data>
+  <data name="Service.Block05" xml:space="preserve">
+    <value>A Service gives clients a stable address and selects backend Pods by labels.</value>
+  </data>
+  <data name="Service.Block06" xml:space="preserve">
+    <value>Common types are ClusterIP, NodePort, LoadBalancer, and ExternalName.</value>
+  </data>
+  <data name="Service.Block07" xml:space="preserve">
+    <value>The selector-to-Pod association is distinct from ownership.</value>
+  </data>
+  <data name="IngressEGatewayApi.Block03" xml:space="preserve">
+    <value>Ingress and Gateway API describe HTTP/HTTPS entry points and route traffic to Services. Ingress is the older, simpler API. Gateway API offers richer role separation and routing features. Neither replaces the Service that provides a stable backend.</value>
+  </data>
+  <data name="IngressEGatewayApi.Block05" xml:space="preserve">
+    <value>Gateway API offers richer role separation and routing features.</value>
+  </data>
+  <data name="Configmap.Block03" xml:space="preserve">
+    <value>A ConfigMap stores non-sensitive configuration. Pods can consume its keys as environment variables or mounted files. Do not store passwords, tokens, or private keys in a ConfigMap.</value>
+  </data>
+  <data name="Configmap.Block04" xml:space="preserve">
+    <value>A ConfigMap stores non-sensitive configuration.</value>
+  </data>
+  <data name="Configmap.Block05" xml:space="preserve">
+    <value>Pods can consume its keys as environment variables or mounted files.</value>
+  </data>
+  <data name="Secret.Block02" xml:space="preserve">
+    <value>A Secret represents sensitive values such as passwords, tokens, certificates, and connection strings.</value>
+  </data>
+  <data name="Secret.Block03" xml:space="preserve">
+    <value>Base64 encoding in the API representation is not encryption.</value>
+  </data>
+  <data name="Secret.Block04" xml:space="preserve">
+    <value>Protection depends on RBAC, transport security, and the cluster's storage encryption configuration.</value>
+  </data>
+  <data name="Secret.Block05" xml:space="preserve">
+    <value>This app hides Secret values by default and only requests them after an explicit reveal action.</value>
+  </data>
+  <data name="Secret.Block07" xml:space="preserve">
+    <value>A Secret represents sensitive values such as passwords, tokens, certificates, and connection strings. Base64 encoding in the API representation is not encryption. Protection depends on RBAC, transport security, and the cluster's storage encryption configuration. This app hides Secret values by default and only requests them after an explicit reveal action.</value>
+  </data>
+  <data name="Secret.Block08" xml:space="preserve">
+    <value>A Secret represents sensitive values such as passwords, tokens, certificates, and connection strings.</value>
+  </data>
+  <data name="Persistentvolumeclaim.Block03" xml:space="preserve">
+    <value>A PersistentVolumeClaim (PVC) is an application's request for storage capacity and access modes. A Pod mounts the claim instead of depending on a specific storage device.</value>
+  </data>
+  <data name="Storageclass.Block03" xml:space="preserve">
+    <value>A StorageClass describes a class of dynamically provisioned storage. A PVC can name a class; a provisioner then creates a matching PV according to that class's parameters and policies.</value>
+  </data>
+  <data name="Statefulset.Block03" xml:space="preserve">
+    <value>A StatefulSet manages Pods that need stable identities or storage associated with each replica. Names such as `database-0` and `database-1` remain predictable across replacement. Stateful workloads often need ordered startup and shutdown.</value>
+  </data>
+  <data name="Statefulset.Block05" xml:space="preserve">
+    <value>Stateful workloads often need ordered startup and shutdown.</value>
+  </data>
+  <data name="Statefulset.Block06" xml:space="preserve">
+    <value>A StatefulSet manages Pods that need stable identities or storage associated with each replica.</value>
+  </data>
+  <data name="Statefulset.Block07" xml:space="preserve">
+    <value>Names such as `database-0` and `database-1` remain predictable across replacement.</value>
+  </data>
+  <data name="Statefulset.Block08" xml:space="preserve">
+    <value>Stateful workloads often need ordered startup and shutdown.</value>
+  </data>
+  <data name="Statefulset.Block09" xml:space="preserve">
+    <value>A StatefulSet manages Pods that need stable identities or storage associated with each replica.</value>
+  </data>
+  <data name="Statefulset.Block10" xml:space="preserve">
+    <value>Names such as `database-0` and `database-1` remain predictable across replacement.</value>
+  </data>
+  <data name="Daemonset.Block03" xml:space="preserve">
+    <value>A DaemonSet schedules a Pod onto every eligible Node, or onto Nodes matching its scheduling rules. Typical uses include logging, monitoring, networking, and security agents.</value>
+  </data>
+  <data name="Daemonset.Block04" xml:space="preserve">
+    <value>A DaemonSet schedules a Pod onto every eligible Node, or onto Nodes matching its scheduling rules.</value>
+  </data>
+  <data name="Daemonset.Block05" xml:space="preserve">
+    <value>Typical uses include logging, monitoring, networking, and security agents.</value>
+  </data>
+  <data name="Daemonset.Block06" xml:space="preserve">
+    <value>A DaemonSet schedules a Pod onto every eligible Node, or onto Nodes matching its scheduling rules.</value>
+  </data>
+  <data name="Daemonset.Block07" xml:space="preserve">
+    <value>Typical uses include logging, monitoring, networking, and security agents.</value>
+  </data>
+  <data name="JobECronjob.Block03" xml:space="preserve">
+    <value>A Job runs work that should complete, such as a migration or batch task. A CronJob creates Jobs on a schedule. Jobs and their Pods remain separate resources, connected through ownership.</value>
+  </data>
+  <data name="JobECronjob.Block04" xml:space="preserve">
+    <value>A Job runs work that should complete, such as a migration or batch task.</value>
+  </data>
+  <data name="JobECronjob.Block05" xml:space="preserve">
+    <value>A CronJob creates Jobs on a schedule.</value>
+  </data>
+  <data name="JobECronjob.Block06" xml:space="preserve">
+    <value>Jobs and their Pods remain separate resources, connected through ownership.</value>
+  </data>
+  <data name="RequestsELimits.Block03" xml:space="preserve">
+    <value>Requests and limits</value>
+  </data>
+  <data name="RequestsELimits.Block04" xml:space="preserve">
+    <value>Requests describe the CPU and memory a container asks the scheduler to reserve. Limits cap the resources it may consume. Requests affect placement; limits affect runtime enforcement.</value>
+  </data>
+  <data name="RequestsELimits.Block05" xml:space="preserve">
+    <value>Requests and limits</value>
+  </data>
+  <data name="RequestsELimits.Block06" xml:space="preserve">
+    <value>Requests affect placement; limits affect runtime enforcement.</value>
+  </data>
+  <data name="Scheduling.Block03" xml:space="preserve">
+    <value>The scheduler chooses a Node for each unscheduled Pod. It considers resource requests, node availability, affinity rules, taints and tolerations, topology constraints, and other policies. A Pod can remain Pending when no eligible Node is available.</value>
+  </data>
+  <data name="Scheduling.Block04" xml:space="preserve">
+    <value>The scheduler chooses a Node for each unscheduled Pod.</value>
+  </data>
+  <data name="Scheduling.Block05" xml:space="preserve">
+    <value>It considers resource requests, node availability, affinity rules, taints and tolerations, topology constraints, and other policies.</value>
+  </data>
+  <data name="Scheduling.Block06" xml:space="preserve">
+    <value>A Pod can remain Pending when no eligible Node is available.</value>
+  </data>
+  <data name="Scheduling.Block07" xml:space="preserve">
+    <value>The scheduler chooses a Node for each unscheduled Pod.</value>
+  </data>
+  <data name="Scheduling.Block08" xml:space="preserve">
+    <value>It considers resource requests, node availability, affinity rules, taints and tolerations, topology constraints, and other policies.</value>
+  </data>
+  <data name="Scheduling.Block09" xml:space="preserve">
+    <value>A Pod can remain Pending when no eligible Node is available.</value>
+  </data>
+  <data name="Scheduling.Block10" xml:space="preserve">
+    <value>The scheduler chooses a Node for each unscheduled Pod.</value>
+  </data>
+  <data name="Scheduling.Block11" xml:space="preserve">
+    <value>It considers resource requests, node availability, affinity rules, taints and tolerations, topology constraints, and other policies.</value>
+  </data>
+  <data name="Scheduling.Block12" xml:space="preserve">
+    <value>A Pod can remain Pending when no eligible Node is available.</value>
+  </data>
+  <data name="PodAntiAffinity.Block03" xml:space="preserve">
+    <value>Pod anti-affinity can keep related Pods apart, for example by spreading replicas across Nodes. This can reduce the effect of a single machine failure, subject to available capacity and topology rules.</value>
+  </data>
+  <data name="TaintsETolerations.Block03" xml:space="preserve">
+    <value>A taint marks a Node so that Pods without a matching toleration are not scheduled there, or may be evicted. A toleration allows a Pod to be considered; it does not by itself force placement on that Node.</value>
+  </data>
+  <data name="TaintsETolerations.Block05" xml:space="preserve">
+    <value>A taint marks a Node so that Pods without a matching toleration are not scheduled there, or may be evicted.</value>
+  </data>
+  <data name="TaintsETolerations.Block06" xml:space="preserve">
+    <value>A taint marks a Node so that Pods without a matching toleration are not scheduled there, or may be evicted.</value>
+  </data>
+  <data name="TaintsETolerations.Block07" xml:space="preserve">
+    <value>A toleration allows a Pod to be considered; it does not by itself force placement on that Node.</value>
+  </data>
+  <data name="TaintsETolerations.Block08" xml:space="preserve">
+    <value>A taint marks a Node so that Pods without a matching toleration are not scheduled there, or may be evicted.</value>
+  </data>
+  <data name="TopologySpreadConstraints.Block03" xml:space="preserve">
+    <value>Topology spread constraints distribute Pods across failure domains such as Nodes or zones. They help avoid concentrating all replicas in one domain, subject to the configured skew and scheduling constraints.</value>
+  </data>
+  <data name="HealthProbes.Block02" xml:space="preserve">
+    <value>Health probes</value>
+  </data>
+  <data name="HealthProbes.Block03" xml:space="preserve">
+    <value>Startup probes allow slow applications time to initialize. Readiness probes determine whether a container should receive traffic. Liveness probes detect a process that should be restarted. These probes answer different questions and should be configured for the application's behavior.</value>
+  </data>
+  <data name="HealthProbes.Block04" xml:space="preserve">
+    <value>Health probes</value>
+  </data>
+  <data name="HealthProbes.Block05" xml:space="preserve">
+    <value>Liveness probes detect a process that should be restarted.</value>
+  </data>
+  <data name="HealthProbes.Block06" xml:space="preserve">
+    <value>Health probes</value>
+  </data>
+  <data name="HealthProbes.Block07" xml:space="preserve">
+    <value>These probes answer different questions and should be configured for the application's behavior.</value>
+  </data>
+  <data name="HealthProbes.Block09" xml:space="preserve">
+    <value>Startup probes allow slow applications time to initialize.</value>
+  </data>
+  <data name="HorizontalPodAutoscalerHpa.Block03" xml:space="preserve">
+    <value>The Horizontal Pod Autoscaler (HPA) adjusts a workload's replica count using resource or custom metrics. It needs usable metrics and a scalable target. It adds or removes Pods; it does not resize the resources allocated to each Pod.</value>
+  </data>
+  <data name="HorizontalPodAutoscalerHpa.Block05" xml:space="preserve">
+    <value>It adds or removes Pods; it does not resize the resources allocated to each Pod.</value>
+  </data>
+  <data name="HorizontalPodAutoscalerHpa.Block06" xml:space="preserve">
+    <value>The Horizontal Pod Autoscaler (HPA) adjusts a workload's replica count using resource or custom metrics.</value>
+  </data>
+  <data name="HorizontalPodAutoscalerHpa.Block07" xml:space="preserve">
+    <value>It needs usable metrics and a scalable target.</value>
+  </data>
+  <data name="HorizontalPodAutoscalerHpa.Block08" xml:space="preserve">
+    <value>It adds or removes Pods; it does not resize the resources allocated to each Pod.</value>
+  </data>
+  <data name="HorizontalPodAutoscalerHpa.Block09" xml:space="preserve">
+    <value>The Horizontal Pod Autoscaler (HPA) adjusts a workload's replica count using resource or custom metrics.</value>
+  </data>
+  <data name="VerticalPodAutoscalerVpa.Block03" xml:space="preserve">
+    <value>The Vertical Pod Autoscaler (VPA) recommends or adjusts CPU and memory requests for Pods. Depending on its mode, applying a recommendation can require Pod replacement. HPA changes the number of Pods; VPA changes per-Pod resource sizing.</value>
+  </data>
+  <data name="PoddisruptionbudgetPdb.Block03" xml:space="preserve">
+    <value>A PodDisruptionBudget (PDB) limits voluntary disruptions so a minimum number or percentage of selected Pods remains available. It affects operations such as draining a Node; it does not prevent involuntary failures.</value>
+  </data>
+  <data name="PoddisruptionbudgetPdb.Block04" xml:space="preserve">
+    <value>A PodDisruptionBudget (PDB) limits voluntary disruptions so a minimum number or percentage of selected Pods remains available.</value>
+  </data>
+  <data name="PoddisruptionbudgetPdb.Block05" xml:space="preserve">
+    <value>It affects operations such as draining a Node; it does not prevent involuntary failures.</value>
+  </data>
+  <data name="PoddisruptionbudgetPdb.Block06" xml:space="preserve">
+    <value>A PodDisruptionBudget (PDB) limits voluntary disruptions so a minimum number or percentage of selected Pods remains available.</value>
+  </data>
+  <data name="PoddisruptionbudgetPdb.Block07" xml:space="preserve">
+    <value>It affects operations such as draining a Node; it does not prevent involuntary failures.</value>
+  </data>
+  <data name="Rbac.Block02" xml:space="preserve">
+    <value>Role-based access control (RBAC) grants verbs such as `get`, `list`, `watch`, `create`, `patch`, and `delete` on specified resources and scopes.</value>
+  </data>
+  <data name="Rbac.Block03" xml:space="preserve">
+    <value>Roles and RoleBindings are namespace-scoped; ClusterRoles and ClusterRoleBindings can grant cluster-wide permissions.</value>
+  </data>
+  <data name="Rbac.Block04" xml:space="preserve">
+    <value>Role-based access control (RBAC) grants verbs such as `get`, `list`, `watch`, `create`, `patch`, and `delete` on specified resources and scopes.</value>
+  </data>
+  <data name="Rbac.Block05" xml:space="preserve">
+    <value>Roles and RoleBindings are namespace-scoped; ClusterRoles and ClusterRoleBindings can grant cluster-wide permissions.</value>
+  </data>
+  <data name="Rbac.Block07" xml:space="preserve">
+    <value>Role-based access control (RBAC) grants verbs such as `get`, `list`, `watch`, `create`, `patch`, and `delete` on specified resources and scopes. Roles and RoleBindings are namespace-scoped; ClusterRoles and ClusterRoleBindings can grant cluster-wide permissions.</value>
+  </data>
+  <data name="Securitycontext.Block02" xml:space="preserve">
+    <value>A SecurityContext configures process and container security, including user and group IDs, Linux capabilities, privilege escalation, and read-only filesystems.</value>
+  </data>
+  <data name="Securitycontext.Block03" xml:space="preserve">
+    <value>Pod-level and container-level settings can have different scope.</value>
+  </data>
+  <data name="Securitycontext.Block04" xml:space="preserve">
+    <value>A SecurityContext configures process and container security, including user and group IDs, Linux capabilities, privilege escalation, and read-only filesystems.</value>
+  </data>
+  <data name="Securitycontext.Block05" xml:space="preserve">
+    <value>Pod-level and container-level settings can have different scope.</value>
+  </data>
+  <data name="Securitycontext.Block06" xml:space="preserve">
+    <value>A SecurityContext configures process and container security, including user and group IDs, Linux capabilities, privilege escalation, and read-only filesystems.</value>
+  </data>
+  <data name="Networkpolicy.Block03" xml:space="preserve">
+    <value>A NetworkPolicy selects Pods and describes allowed ingress or egress traffic. Enforcement depends on a network plugin that supports NetworkPolicy. Policies are additive, and their effect depends on the selected Pods and namespace.</value>
+  </data>
+  <data name="Limitrange.Block02" xml:space="preserve">
+    <value>A LimitRange sets per-object minimums, maximums, or defaults for resources in a Namespace.</value>
+  </data>
+  <data name="Limitrange.Block03" xml:space="preserve">
+    <value>ResourceQuota limits the namespace total; LimitRange governs individual Pods, containers, or claims.</value>
+  </data>
+  <data name="Limitrange.Block04" xml:space="preserve">
+    <value>A LimitRange sets per-object minimums, maximums, or defaults for resources in a Namespace.</value>
+  </data>
+  <data name="Limitrange.Block05" xml:space="preserve">
+    <value>ResourceQuota limits the namespace total; LimitRange governs individual Pods, containers, or claims.</value>
+  </data>
+  <data name="CrdCustomResourceDefinition.Block03" xml:space="preserve">
+    <value>A CustomResourceDefinition (CRD) adds a new kind to the Kubernetes API. Once installed, users can create custom resources that follow the CRD schema. A CRD defines a type; an operator or controller usually implements its behavior.</value>
+  </data>
+  <data name="CrdCustomResourceDefinition.Block05" xml:space="preserve">
+    <value>A CRD defines a type; an operator or controller usually implements its behavior.</value>
+  </data>
+  <data name="Controller.Block03" xml:space="preserve">
+    <value>A controller watches API objects and repeatedly compares desired state with observed state. It takes actions to reduce the difference. Controllers are the mechanism behind Deployments, StatefulSets, and many other Kubernetes features.</value>
+  </data>
+  <data name="Operator.Block02" xml:space="preserve">
+    <value>An Operator combines CRDs and controllers with application-specific operational knowledge.</value>
+  </data>
+  <data name="Operator.Block03" xml:space="preserve">
+    <value>It can automate tasks such as provisioning, backup, recovery, replication, and upgrades for a particular system.</value>
+  </data>
+  <data name="Operator.Block04" xml:space="preserve">
+    <value>An Operator combines CRDs and controllers with application-specific operational knowledge.</value>
+  </data>
+  <data name="Operator.Block05" xml:space="preserve">
+    <value>It can automate tasks such as provisioning, backup, recovery, replication, and upgrades for a particular system.</value>
+  </data>
+  <data name="Operator.Block06" xml:space="preserve">
+    <value>An Operator combines CRDs and controllers with application-specific operational knowledge.</value>
+  </data>
+  <data name="Operator.Block07" xml:space="preserve">
+    <value>It can automate tasks such as provisioning, backup, recovery, replication, and upgrades for a particular system.</value>
+  </data>
+  <data name="Operator.Block08" xml:space="preserve">
+    <value>An Operator combines CRDs and controllers with application-specific operational knowledge.</value>
+  </data>
+  <data name="Operator.Block09" xml:space="preserve">
+    <value>It can automate tasks such as provisioning, backup, recovery, replication, and upgrades for a particular system.</value>
+  </data>
+  <data name="AdmissionControllers.Block02" xml:space="preserve">
+    <value>Admission controllers inspect API requests after authentication and authorization but before persistence.</value>
+  </data>
+  <data name="AdmissionControllers.Block03" xml:space="preserve">
+    <value>They can validate, mutate, or reject objects.</value>
+  </data>
+  <data name="AdmissionControllers.Block04" xml:space="preserve">
+    <value>They are commonly used to enforce policy and set safe defaults.</value>
+  </data>
+  <data name="AdmissionControllers.Block06" xml:space="preserve">
+    <value>Admission controllers inspect API requests after authentication and authorization but before persistence. They can validate, mutate, or reject objects. They are commonly used to enforce policy and set safe defaults.</value>
+  </data>
+  <data name="Helm.Block02" xml:space="preserve">
+    <value>Helm packages Kubernetes manifests into Charts with templates and configurable values.</value>
+  </data>
+  <data name="Helm.Block03" xml:space="preserve">
+    <value>It manages releases and rendered resources; it does not replace Kubernetes controllers or guarantee that an application is healthy.</value>
+  </data>
+  <data name="Helm.Block04" xml:space="preserve">
+    <value>Helm packages Kubernetes manifests into Charts with templates and configurable values.</value>
+  </data>
+  <data name="Helm.Block05" xml:space="preserve">
+    <value>It manages releases and rendered resources; it does not replace Kubernetes controllers or guarantee that an application is healthy.</value>
+  </data>
+  <data name="Helm.Block07" xml:space="preserve">
+    <value>Helm packages Kubernetes manifests into Charts with templates and configurable values. It manages releases and rendered resources; it does not replace Kubernetes controllers or guarantee that an application is healthy.</value>
+  </data>
+  <data name="Helm.Block09" xml:space="preserve">
+    <value>Helm packages Kubernetes manifests into Charts with templates and configurable values.</value>
+  </data>
+  <data name="ArgoCdEGitops.Block03" xml:space="preserve">
+    <value>GitOps treats a version-controlled repository as a source of desired configuration. Argo CD compares repository state with cluster state and reconciles differences according to its configuration. The visualizer displays resources; it does not perform GitOps synchronization.</value>
+  </data>
+  <data name="ArgoCdEGitops.Block05" xml:space="preserve">
+    <value>The visualizer displays resources; it does not perform GitOps synchronization.</value>
+  </data>
+  <data name="Observabilidade.Block02" xml:space="preserve">
+    <value>Observability combines logs, metrics, traces, and events to understand system behavior.</value>
+  </data>
+  <data name="Observabilidade.Block03" xml:space="preserve">
+    <value>Kubernetes events describe notable object and control-plane activity; application logs describe process output.</value>
+  </data>
+  <data name="Observabilidade.Block04" xml:space="preserve">
+    <value>Metrics and traces require their own collection systems.</value>
+  </data>
+  <data name="Observabilidade.Block05" xml:space="preserve">
+    <value>Observability combines logs, metrics, traces, and events to understand system behavior.</value>
+  </data>
+  <data name="HierarquiaMentalRecomendada.Block03" xml:space="preserve">
+    <value>Start with structural ownership: a Deployment owns ReplicaSets, and ReplicaSets own Pods. Then add other relationships: Services select Pods; routes point to Services; Pods reference configuration, identities, and claims; policies select workloads. Shared labels can help visualize an association, but a label match alone does not prove that one resource depends on another.</value>
+  </data>
+  <data name="ArquiteturaDeUmaAplicacaoTipica.Block03" xml:space="preserve">
+    <value>A .NET application might use a Gateway or Ingress to route requests to an API Service. That Service selects API Pods managed by a Deployment. The Pods consume ConfigMaps and Secrets, mount a PVC, and connect to a database Service backed by a StatefulSet and persistent storage. An HPA can adjust the Deployment's replica count, while a PDB limits voluntary disruption.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block19" xml:space="preserve">
+    <value>Cluster, Control Plane, Node, Namespace, Pod, and Container.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block20" xml:space="preserve">
+    <value>Deployment, ReplicaSet, StatefulSet, DaemonSet, Job, and CronJob.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block21" xml:space="preserve">
+    <value>Level 1 — Structure</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block22" xml:space="preserve">
+    <value>Labels, selectors, Services, Ingress, and Gateway API.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block23" xml:space="preserve">
+    <value>ConfigMap, Secret, Volume, PVC, PV, and StorageClass.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block24" xml:space="preserve">
+    <value>Requests, limits, Scheduler, affinity, anti-affinity, taints, tolerations, and topology spread constraints.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block25" xml:space="preserve">
+    <value>Probes, HPA, VPA, PDB, and PriorityClass.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block26" xml:space="preserve">
+    <value>ServiceAccount, RBAC, SecurityContext, NetworkPolicy, ResourceQuota, and LimitRange.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block27" xml:space="preserve">
+    <value>CRDs, controllers, operators, and admission controllers.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block28" xml:space="preserve">
+    <value>Level 2 — Workloads</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block29" xml:space="preserve">
+    <value>Helm, Kustomize, Argo CD, GitOps, and observability.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block30" xml:space="preserve">
+    <value>Cluster, Control Plane, Node, Namespace, Pod, and Container.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block31" xml:space="preserve">
+    <value>Deployment, ReplicaSet, StatefulSet, DaemonSet, Job, and CronJob.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block32" xml:space="preserve">
+    <value>Labels, selectors, Services, Ingress, and Gateway API.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block33" xml:space="preserve">
+    <value>ConfigMap, Secret, Volume, PVC, PV, and StorageClass.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block34" xml:space="preserve">
+    <value>Requests, limits, Scheduler, affinity, anti-affinity, taints, tolerations, and topology spread constraints.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block35" xml:space="preserve">
+    <value>Probes, HPA, VPA, PDB, and PriorityClass.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block36" xml:space="preserve">
+    <value>ServiceAccount, RBAC, SecurityContext, NetworkPolicy, ResourceQuota, and LimitRange.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block37" xml:space="preserve">
+    <value>Level 3 — Communication</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block38" xml:space="preserve">
+    <value>CRDs, controllers, operators, and admission controllers.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block39" xml:space="preserve">
+    <value>Helm, Kustomize, Argo CD, GitOps, and observability.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block40" xml:space="preserve">
+    <value>Cluster, Control Plane, Node, Namespace, Pod, and Container.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block41" xml:space="preserve">
+    <value>Deployment, ReplicaSet, StatefulSet, DaemonSet, Job, and CronJob.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block42" xml:space="preserve">
+    <value>Labels, selectors, Services, Ingress, and Gateway API.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block43" xml:space="preserve">
+    <value>Level 4 — Configuration and data</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block44" xml:space="preserve">
+    <value>ConfigMap, Secret, Volume, PVC, PV, and StorageClass.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block45" xml:space="preserve">
+    <value>Requests, limits, Scheduler, affinity, anti-affinity, taints, tolerations, and topology spread constraints.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block46" xml:space="preserve">
+    <value>Probes, HPA, VPA, PDB, and PriorityClass.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block47" xml:space="preserve">
+    <value>ServiceAccount, RBAC, SecurityContext, NetworkPolicy, ResourceQuota, and LimitRange.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block48" xml:space="preserve">
+    <value>CRDs, controllers, operators, and admission controllers.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block49" xml:space="preserve">
+    <value>Helm, Kustomize, Argo CD, GitOps, and observability.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block50" xml:space="preserve">
+    <value>Level 5 — Scheduling and resources</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block51" xml:space="preserve">
+    <value>Cluster, Control Plane, Node, Namespace, Pod, and Container.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block52" xml:space="preserve">
+    <value>Deployment, ReplicaSet, StatefulSet, DaemonSet, Job, and CronJob.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block53" xml:space="preserve">
+    <value>Labels, selectors, Services, Ingress, and Gateway API.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block54" xml:space="preserve">
+    <value>ConfigMap, Secret, Volume, PVC, PV, and StorageClass.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block55" xml:space="preserve">
+    <value>Level 6 — Resilience and scaling</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block56" xml:space="preserve">
+    <value>Requests, limits, Scheduler, affinity, anti-affinity, taints, tolerations, and topology spread constraints.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block57" xml:space="preserve">
+    <value>Probes, HPA, VPA, PDB, and PriorityClass.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block58" xml:space="preserve">
+    <value>ServiceAccount, RBAC, SecurityContext, NetworkPolicy, ResourceQuota, and LimitRange.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block59" xml:space="preserve">
+    <value>CRDs, controllers, operators, and admission controllers.</value>
+  </data>
+  <data name="OrdemRecomendadaParaEstudar.Block60" xml:space="preserve">
+    <value>Helm, Kustomize, Argo CD, GitOps, and observability.</value>
+  </data>
+  <data name="ResumoFinal.Block01" xml:space="preserve">
+    <value>Keep the distinction between structure and relationships: Cluster is the broadest context; Nodes and Namespaces belong to it; workloads in Namespaces create Pods; Pods run Containers. Many other resources point to, select, configure, or constrain these objects rather than forming ownership hierarchy.</value>
+  </data>
+  <data name="ResumoFinal.Block03" xml:space="preserve">
+    <value>The Wiki's **Practical examples** sections contain fuller translated examples with copy buttons. Names and images below are illustrative; check your cluster's controllers and StorageClasses before applying manifests.</value>
+  </data>
+  <data name="ResumoFinal.Block04" xml:space="preserve">
+    <value>Keep the distinction between structure and relationships: Cluster is the broadest context; Nodes and Namespaces belong to it; workloads in Namespaces create Pods; Pods run Containers.</value>
+  </data>
+  <data name="Deployment.ControllerChain" xml:space="preserve">
+    <value>You declare the Deployment; the Deployment controller creates and updates ReplicaSets; each ReplicaSet keeps the Pods for its revision running. Normally apply and change the Deployment instead of manually creating its managed ReplicaSets and Pods.</value>
+  </data>
+  <data name="JobECronjob.ControllerChain" xml:space="preserve">
+    <value>A CronJob creates a Job for each scheduled run; the Job creates one or more Pods and tracks their completion. For a one-time task, create the Job directly and let it create the Pods.</value>
+  </data>
+  <data name="Pod.ControllerOwnership" xml:space="preserve">
+    <value>A Pod created directly has no controller to recreate it if it is removed. Use a Deployment for replaceable replicas, or a CronJob for scheduled work; it creates Jobs, which create Pods.</value>
+  </data>
+  <data name="Statefulset.ControllerChain" xml:space="preserve">
+    <value>A StatefulSet creates Pods with stable ordinal identities and, through volumeClaimTemplates, requests one PersistentVolumeClaim per replica. Provisioning can bind each claim to a PersistentVolume; the controller does not create physical storage by itself.</value>
+  </data>
+  <data name="Daemonset.ControllerChain" xml:space="preserve">
+    <value>A DaemonSet watches eligible Nodes and maintains one Pod on each. You create the DaemonSet; its controller creates, removes, or replaces those Pods as Nodes and selectors change.</value>
+  </data>
+  <data name="Cluster.CreationNote" xml:space="preserve">
+    <value>A cluster is not created with a portable Kubernetes manifest. Create it through the chosen provider or distribution, then use these commands to check the context and available components.</value>
+  </data>
+  <data name="WorkerNode.CreationNote" xml:space="preserve">
+    <value>On managed clusters, the provider creates and configures Nodes; do not try to create a Node with a generic manifest. On self-managed clusters, bootstrapping depends on the distribution. These commands inspect existing Nodes.</value>
+  </data>
+  <data name="Persistentvolume.ExampleNote" xml:space="preserve">
+    <value>This manifest uses hostPath only to demonstrate a static PersistentVolume in a lab. In production, prefer provisioning suited to the environment through a StorageClass; a PersistentVolume does not create the physical disk.</value>
+  </data>
+  <data name="HorizontalPodAutoscalerHpa.Prerequisites" xml:space="preserve">
+    <value>For the CPU metric in this example, install and configure Metrics Server and set CPU requests on containers in the target Pod template. The HPA adjusts the Deployment scale; it does not create Pods directly.</value>
+  </data>
+  <data name="VerticalPodAutoscalerVpa.Prerequisites" xml:space="preserve">
+    <value>This resource requires the Vertical Pod Autoscaler components to be installed in the cluster. Off mode only recommends values; modes that apply recommendations may restart Pods. VPA acts on its configured target, such as a Deployment.</value>
+  </data>
+  <data name="IngressEGatewayApi.GatewayPrerequisite" xml:space="preserve">
+    <value>The Gateway API requires its CRDs and a compatible controller. The controller operator installs/configures GatewayClass; replace the example name with a GatewayClass available in the cluster. HTTPRoute references an existing Gateway and Service.</value>
+  </data>
+</root>

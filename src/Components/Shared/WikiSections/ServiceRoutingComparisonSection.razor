@@ -1,0 +1,23 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("Practical.ServiceIngressGateway.Block01"),
+        new WikiCodeItem("yaml", """
+apiVersion: v1
+kind: Service
+metadata: { name: web }
+spec:
+  selector: { app: web }
+  ports: [{ port: 80, targetPort: 8080 }]
+"""),
+        new WikiParagraphBlock("Practical.ServiceIngressGateway.Block03"),
+        new WikiReferenceBlock("https://kubernetes.io/docs/concepts/services-networking/service/", "Service"),
+        new WikiReferenceBlock("https://kubernetes.io/docs/concepts/services-networking/ingress/", "Ingress"),
+        new WikiReferenceBlock("https://gateway-api.sigs.k8s.io/", "Gateway API")
+    ];
+}

@@ -1,0 +1,18 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("Kustomize.Block01"),
+        new WikiCodeItem("text", """
+base/
+overlays/
+├── dev/
+├── staging/
+└── prod/
+""")
+    ];
+}

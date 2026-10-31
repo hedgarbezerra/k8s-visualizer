@@ -1,0 +1,80 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("Statefulset.Block01"),
+        new WikiParagraphBlock("Statefulset.ControllerChain"),
+        new WikiDiagramItem("""
+flowchart TD
+    SS[StatefulSet]
+    SS --> P0[postgres-0]
+    SS --> P1[postgres-1]
+    P0 --> PVC0[PVC]
+    P1 --> PVC1[PVC]
+"""),
+        new WikiParagraphBlock("Statefulset.Block03"),
+        new WikiCodeItem("text", """
+postgres-0
+postgres-1
+postgres-2
+"""),
+        new WikiParagraphBlock("Statefulset.Block05"),
+        new WikiListItemBlock("Statefulset.Block06"),
+        new WikiListItemBlock("Statefulset.Block07"),
+        new WikiListItemBlock("Statefulset.Block08"),
+        new WikiListItemBlock("Statefulset.Block09"),
+        new WikiListItemBlock("Statefulset.Block10")
+        ,new WikiInternalLinkBlock("persistentvolumeclaim", "Persistentvolumeclaim.Title"),
+        new WikiInternalLinkBlock("deployment", "Deployment.Title"),
+        new WikiCodeItem("yaml", """
+apiVersion: v1
+kind: Service
+metadata:
+  name: database
+spec:
+  clusterIP: None
+  selector:
+    app: database
+  ports:
+    - name: db
+      port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: database
+spec:
+  serviceName: database
+  replicas: 2
+  selector:
+    matchLabels:
+      app: database
+  template:
+    metadata:
+      labels:
+        app: database
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 5Gi
+""")
+    ];
+}

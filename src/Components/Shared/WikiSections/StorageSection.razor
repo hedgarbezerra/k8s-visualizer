@@ -1,0 +1,39 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("Storage.Block01"),
+        new WikiCodeItem("text", """
+Pod
+ |
+ v
+PVC
+ |
+ v
+PV
+ |
+ v
+Storage
+"""),
+        new WikiCodeItem("yaml", """
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app-with-volume
+spec:
+  containers:
+    - name: app
+      image: nginx:1.27
+      volumeMounts:
+        - name: shared-data
+          mountPath: /data
+  volumes:
+    - name: shared-data
+      emptyDir: {}
+""")
+    ];
+}

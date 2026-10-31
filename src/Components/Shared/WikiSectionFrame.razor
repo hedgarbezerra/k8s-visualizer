@@ -1,0 +1,9 @@
+<section class="wiki-topic">
+    <h2 id="@Section.Id"><a href="/wiki#@Section.Id">@Section.Title<span aria-hidden="true"> ↗</span></a></h2>
+    @ChildContent
+</section>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

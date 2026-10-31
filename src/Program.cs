@@ -1,6 +1,8 @@
 using KubernetesVisualizer.Components;
 using KubernetesVisualizer;
+using KubernetesVisualizer.Models.Configuration;
 using KubernetesVisualizer.Services;
+using KubernetesVisualizer.Services.DashboardResourceGraphFilters;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Localization;
 using MudBlazor.Services;
@@ -10,9 +12,14 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddMudServices();
 builder.Services.AddLocalization();
-builder.Services.AddSingleton<KubernetesConnectionProfileStore>();
-builder.Services.AddScoped<KubernetesClusterService>();
-builder.Services.AddScoped<ApplicationCultureService>();
+builder.Services.Configure<GraphGroupingOptions>(builder.Configuration.GetSection(GraphGroupingOptions.SectionName));
+builder.Services.AddSingleton<ConnectionProfileStore>();
+builder.Services.AddSingleton<ApplicationSettingsStore>();
+builder.Services.AddScoped<ApplicationEventManager>();
+builder.Services.AddScoped<ClusterService>();
+builder.Services.AddScoped<ResourceGraphService>();
+builder.Services.AddSingleton<DashboardResourceGraphFilterManager>();
+builder.Services.AddScoped<GraphGroupingSettingsService>();
 
 var configuredKeyDirectory = builder.Configuration["DataProtection:KeysDirectory"];
 var keyDirectory = string.IsNullOrWhiteSpace(configuredKeyDirectory)
@@ -48,8 +55,8 @@ app.UseRequestLocalization(localizationOptions);
 
 await using (var storageScope = app.Services.CreateAsyncScope())
 {
-    var profileStore = storageScope.ServiceProvider.GetRequiredService<KubernetesConnectionProfileStore>();
-    await profileStore.InitializeAsync();
+    await storageScope.ServiceProvider.GetRequiredService<ConnectionProfileStore>().InitializeAsync();
+    await storageScope.ServiceProvider.GetRequiredService<ApplicationSettingsStore>().InitializeAsync();
 }
 
 if (!app.Environment.IsDevelopment())

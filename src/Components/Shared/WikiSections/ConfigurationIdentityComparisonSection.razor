@@ -1,0 +1,28 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("Practical.ConfigurationIdentityPermissions.Block01"),
+        new WikiCodeItem("yaml", """
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: api-config }
+data: { LOG_LEVEL: Information }
+---
+apiVersion: v1
+kind: Secret
+metadata: { name: api-credentials }
+type: Opaque
+stringData: { password: replace-me }
+"""),
+        new WikiParagraphBlock("Practical.ConfigurationIdentityPermissions.Block03"),
+        new WikiReferenceBlock("https://kubernetes.io/docs/concepts/configuration/configmap/", "ConfigMap"),
+        new WikiReferenceBlock("https://kubernetes.io/docs/concepts/configuration/secret/", "Secret"),
+        new WikiReferenceBlock("https://kubernetes.io/docs/concepts/security/service-accounts/", "ServiceAccount"),
+        new WikiReferenceBlock("https://kubernetes.io/docs/reference/access-authn-authz/rbac/", "RBAC")
+    ];
+}

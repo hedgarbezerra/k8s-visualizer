@@ -1,0 +1,27 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("Observabilidade.Block01"),
+        new WikiListItemBlock("Observabilidade.Block02"),
+        new WikiListItemBlock("Observabilidade.Block03"),
+        new WikiListItemBlock("Observabilidade.Block04"),
+        new WikiListItemBlock("Observabilidade.Block05"),
+        new WikiDiagramItem("""
+flowchart TD
+    A[Application]
+    A --> L[Logs]
+    A --> M[Metrics]
+    A --> T[Traces]
+    A --> E[Kubernetes Events]
+    M --> HPA[HPA]
+    L --> O[Observability Platform]
+    M --> O
+    T --> O
+""")
+    ];
+}

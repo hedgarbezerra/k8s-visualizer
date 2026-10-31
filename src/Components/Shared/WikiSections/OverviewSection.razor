@@ -1,0 +1,22 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("VisaoGeral.Block01"),
+        new WikiDiagramItem("""
+flowchart TD
+    A[Estado desejado] --> B[Kubernetes]
+    B --> C[Cluster]
+    C --> D[Nodes]
+    D --> E[Pods]
+    E --> F[Containers]
+"""),
+        new WikiParagraphBlock("VisaoGeral.Block03"),
+        new WikiListItemBlock("VisaoGeral.Block04"),
+        new WikiListItemBlock("VisaoGeral.Block05")
+    ];
+}

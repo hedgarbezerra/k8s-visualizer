@@ -1,10 +1,10 @@
 @page "/settings"
 @implements IDisposable
-@inject KubernetesClusterService ClusterService
-@inject KubernetesConnectionProfileStore ProfileStore
+@inject ClusterService ClusterService
+@inject ApplicationEventManager AppEvents
+@inject ConnectionProfileStore ProfileStore
 @inject NavigationManager Navigation
 @inject IStringLocalizer<AppStrings> L
-@inject ApplicationCultureService CultureService
 
 <PageTitle>@L["Settings"] | Kubernetes Visualizer</PageTitle>
 
@@ -21,6 +21,40 @@
             <MudSelectItem Value="@("pt-BR")">@L["Portuguese"]</MudSelectItem>
             <MudSelectItem Value="@("en")">@L["English"]</MudSelectItem>
         </MudSelect>
+    </MudPaper>
+
+    <MudPaper Class="pa-4" Elevation="1">
+        <MudText Typo="Typo.h6" GutterBottom="true">@L["RelatedLabels"]</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">@L["RelatedLabelsDescription"]</MudText>
+        <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Wrap="Wrap.Wrap">
+            <MudTextField T="string" Label="@L["RelatedLabelKey"]" @bind-Value="_newRelatedLabelKey"
+                          Variant="Variant.Outlined" Style="min-width:320px" OnKeyDown="OnRelatedLabelKeyDown" />
+            <MudButton Variant="Variant.Outlined" OnClick="AddRelatedLabelKeyAsync"
+                       Disabled="string.IsNullOrWhiteSpace(_newRelatedLabelKey)">@L["AddRelatedLabel"]</MudButton>
+        </MudStack>
+        @foreach (var labelKey in _relatedLabelKeys)
+        {
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mt-2">
+                <MudText Typo="Typo.body2">@labelKey</MudText>
+                @if (AppEvents.DefaultRelatedLabelKeys.Contains(labelKey, StringComparer.Ordinal))
+                {
+                    <MudChip T="string" Size="Size.Small" Color="Color.Info">@L["DefaultAlwaysEnabled"]</MudChip>
+                }
+                else
+                {
+                <MudIconButton Icon="@Icons.Material.Filled.Close" Color="Color.Default"
+                               aria-label="@L["RemoveRelatedLabel"]"
+                               OnClick="@(() => RemoveRelatedLabelKey(labelKey))" />
+                }
+            </MudStack>
+        }
+        @if (!string.IsNullOrWhiteSpace(_relatedLabelError))
+        {
+            <MudAlert Severity="Severity.Error" Dense="true" Class="mt-3">@_relatedLabelError</MudAlert>
+        }
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-3" OnClick="SaveRelatedLabelKeysAsync">
+            @L["SaveRelatedLabels"]
+        </MudButton>
     </MudPaper>
 
     <MudPaper Class="pa-4" Elevation="1">
@@ -98,24 +132,28 @@
     private string _name = string.Empty;
     private string _path = string.Empty;
     private string? _contextName;
+    private string _newRelatedLabelKey = string.Empty;
+    private List<string> _relatedLabelKeys = [];
+    private string? _relatedLabelError;
 
     private void OnLanguageChanged(string? culture)
     {
         if (culture is not ("pt-BR" or "en")) return;
-        CultureService.NotifyCultureChanged(culture);
+        AppEvents.NotifyCultureChanged(culture);
         Navigation.NavigateTo($"/culture/set?culture={Uri.EscapeDataString(culture)}&returnUrl={Uri.EscapeDataString("/settings")}", forceLoad: true);
     }
 
     protected override async Task OnInitializedAsync()
     {
-        ClusterService.Changed += OnServiceChanged;
-        _path = KubernetesClusterService.ResolvePath(null);
-        await ClusterService.EnsureProfilesLoadedAsync();
+        AppEvents.Changed += OnServiceChanged;
+        _path = ClusterService.ResolvePath(null);
+        await AppEvents.EnsureProfilesLoadedAsync();
+        _relatedLabelKeys = (await AppEvents.GetRelatedLabelKeysAsync()).ToList();
     }
 
     private async Task FindContextsAsync()
     {
-        await ClusterService.LoadContextsFromPathAsync(_path);
+        await AppEvents.LoadContextsFromPathAsync(_path);
         _contextName = ClusterService.AvailableContexts.FirstOrDefault(context => context.IsCurrent)?.Name
                        ?? ClusterService.AvailableContexts.FirstOrDefault()?.Name;
     }
@@ -123,13 +161,43 @@
     private async Task AddConnectionAsync()
     {
         if (_contextName is null) return;
-        await ClusterService.AddProfileAsync(_name, _path, _contextName);
+        await AppEvents.AddProfileAsync(_name, _path, _contextName);
         _name = string.Empty;
     }
 
-    private Task ConnectAsync(string id) => ClusterService.ConnectAsync(id);
-    private Task DisconnectAsync(string id) => ClusterService.DisconnectAsync(id);
-    private Task RemoveAsync(string id) => ClusterService.RemoveProfileAsync(id);
+    private Task ConnectAsync(string id) => AppEvents.ConnectAsync(id);
+    private Task DisconnectAsync(string id) => AppEvents.DisconnectAsync(id);
+    private Task RemoveAsync(string id) => AppEvents.RemoveProfileAsync(id);
+
+    private async Task AddRelatedLabelKeyAsync()
+    {
+        var labelKey = _newRelatedLabelKey.Trim();
+        if (string.IsNullOrWhiteSpace(labelKey) || _relatedLabelKeys.Contains(labelKey, StringComparer.Ordinal)) return;
+        _relatedLabelKeys.Add(labelKey);
+        _newRelatedLabelKey = string.Empty;
+        _relatedLabelError = null;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private Task OnRelatedLabelKeyDown(KeyboardEventArgs args) => args.Key == "Enter"
+        ? AddRelatedLabelKeyAsync()
+        : Task.CompletedTask;
+
+    private void RemoveRelatedLabelKey(string labelKey) => _relatedLabelKeys.Remove(labelKey);
+
+    private async Task SaveRelatedLabelKeysAsync()
+    {
+        try
+        {
+            await AppEvents.SaveRelatedLabelKeysAsync(_relatedLabelKeys);
+            _relatedLabelError = null;
+        }
+        catch (ArgumentException)
+        {
+            _relatedLabelError = L["RelatedLabelInvalid"].Value;
+        }
+    }
+
     private void OnServiceChanged() => _ = InvokeAsync(StateHasChanged);
-    public void Dispose() => ClusterService.Changed -= OnServiceChanged;
+    public void Dispose() => AppEvents.Changed -= OnServiceChanged;
 }

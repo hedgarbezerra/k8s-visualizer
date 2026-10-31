@@ -1,0 +1,19 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("PoddisruptionbudgetPdb.Block01"),
+        new WikiCodeItem("yaml", """
+minAvailable: 2
+"""),
+        new WikiParagraphBlock("PoddisruptionbudgetPdb.Block03"),
+        new WikiListItemBlock("PoddisruptionbudgetPdb.Block04"),
+        new WikiListItemBlock("PoddisruptionbudgetPdb.Block05"),
+        new WikiListItemBlock("PoddisruptionbudgetPdb.Block06"),
+        new WikiListItemBlock("PoddisruptionbudgetPdb.Block07")
+    ];
+}

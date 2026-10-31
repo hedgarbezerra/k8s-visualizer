@@ -1,0 +1,17 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("NodeAffinity.Block01"),
+        new WikiCodeItem("text", """
+Pod
+ |
+ +-- prefere Node com:
+       disk=ssd
+""")
+    ];
+}

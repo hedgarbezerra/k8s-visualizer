@@ -1,0 +1,135 @@
+@typeparam TItem
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<div class="searchable-multi-select">
+    <div class="searchable-multi-select-control" @ref="_root">
+        <MudTextField T="string" Label="@Label" Variant="Variant.Outlined" Margin="Margin.Normal"
+                      Value="_searchText" ValueChanged="OnSearchTextChanged" Immediate="true"
+                      Placeholder="@SelectionSummary" Adornment="Adornment.End"
+                      AdornmentIcon="@(_open ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+                      OnAdornmentClick="ToggleOptions" @onfocus="OpenOptions"
+                      OnKeyDown="OnKeyDown" Class="searchable-multi-select-input" />
+
+        @if (_open)
+        {
+            <MudPaper Class="searchable-multi-select-menu" Elevation="8" Outlined="true">
+                <div role="button" tabindex="0" class="searchable-multi-select-select-all" @onclick="ToggleAllAsync">
+                    <input type="checkbox" checked="@(FilteredItems.Count > 0 && FilteredItems.All(IsSelected))" tabindex="-1" />
+                    <span>@(FilteredItems.Count > 0 && FilteredItems.All(IsSelected) ? ClearFilteredText : SelectFilteredText)</span>
+                </div>
+                <div class="searchable-multi-select-options">
+                    @if (FilteredItems.Count == 0)
+                    {
+                        <div class="searchable-multi-select-empty">@EmptyText</div>
+                    }
+                    else
+                    {
+                        @foreach (var item in FilteredItems)
+                        {
+                            var selected = IsSelected(item);
+                            <label @key="Display(item)" class="searchable-multi-select-option">
+                                <input type="checkbox" checked="@selected" @onchange="args => ToggleItemAsync(item, args.Value is true)" />
+                                <span>@Display(item)</span>
+                            </label>
+                        }
+                    }
+                </div>
+            </MudPaper>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
+    [Parameter] public IReadOnlyCollection<TItem> AvailableItems { get; set; } = [];
+    [Parameter] public IReadOnlyCollection<TItem> SelectedItems { get; set; } = [];
+    [Parameter] public EventCallback<IReadOnlyCollection<TItem>> SelectedItemsChanged { get; set; }
+    [Parameter] public Func<TItem, string> ToStringFunc { get; set; } = item => Convert.ToString(item) ?? string.Empty;
+    [Parameter] public IEqualityComparer<TItem> Comparer { get; set; } = EqualityComparer<TItem>.Default;
+    [Parameter] public Func<int, string> SelectedCountText { get; set; } = count => $"{count} selected";
+    [Parameter] public string SelectFilteredText { get; set; } = "Select all results";
+    [Parameter] public string ClearFilteredText { get; set; } = "Clear selection of results";
+    [Parameter] public string EmptyText { get; set; } = "No matching resource types";
+
+    private string _searchText = string.Empty;
+    private bool _open;
+    private ElementReference _root;
+    private DotNetObjectReference<SearchableMultiSelect<TItem>>? _selfReference;
+
+    private IReadOnlyList<TItem> FilteredItems => AvailableItems
+        .Where(item => string.IsNullOrWhiteSpace(_searchText) || Display(item).Contains(_searchText, StringComparison.OrdinalIgnoreCase))
+        .OrderBy(Display, StringComparer.OrdinalIgnoreCase)
+        .ToArray();
+
+    private string SelectionSummary => SelectedItems.Count == 0 ? Label : SelectedCountText(SelectedItems.Count);
+    private string Display(TItem item) => ToStringFunc(item);
+    private bool IsSelected(TItem item) => SelectedItems.Contains(item, Comparer);
+
+    private Task OnSearchTextChanged(string value)
+    {
+        _searchText = value;
+        _open = true;
+        return Task.CompletedTask;
+    }
+
+    private void OpenOptions(FocusEventArgs _) => _open = true;
+    private void ToggleOptions() => _open = !_open;
+    private void CloseOptions()
+    {
+        _open = false;
+        _searchText = string.Empty;
+    }
+
+    private Task ToggleItemAsync(TItem item, bool selected)
+    {
+        var values = SelectedItems.ToHashSet(Comparer);
+        if (selected) values.Add(item);
+        else values.Remove(item);
+        return SelectedItemsChanged.InvokeAsync((IReadOnlyCollection<TItem>)values.ToArray());
+    }
+
+    private Task ToggleAllAsync()
+    {
+        var values = SelectedItems.ToHashSet(Comparer);
+        if (FilteredItems.Count > 0 && FilteredItems.All(IsSelected))
+        {
+            foreach (var item in FilteredItems) values.Remove(item);
+        }
+        else
+        {
+            foreach (var item in FilteredItems) values.Add(item);
+        }
+
+        return SelectedItemsChanged.InvokeAsync((IReadOnlyCollection<TItem>)values.ToArray());
+    }
+
+    private void OnKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Escape") CloseOptions();
+        else if (args.Key == "ArrowDown") _open = true;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        _selfReference = DotNetObjectReference.Create(this);
+        await JS.InvokeVoidAsync("kvClickAway.bind", _root, _selfReference);
+    }
+
+    [JSInvokable]
+    public Task OnClickAway()
+    {
+        if (!_open) return Task.CompletedTask;
+        CloseOptions();
+        return InvokeAsync(StateHasChanged);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try { await JS.InvokeVoidAsync("kvClickAway.unbind", _root); }
+        catch (JSDisconnectedException) { }
+        catch (InvalidOperationException) { }
+        _selfReference?.Dispose();
+    }
+}

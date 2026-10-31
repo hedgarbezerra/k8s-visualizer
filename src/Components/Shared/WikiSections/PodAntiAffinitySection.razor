@@ -1,0 +1,17 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("PodAntiAffinity.Block01"),
+        new WikiCodeItem("text", """
+API replica 1 -> Node A
+API replica 2 -> Node B
+API replica 3 -> Node C
+"""),
+        new WikiParagraphBlock("PodAntiAffinity.Block03")
+    ];
+}

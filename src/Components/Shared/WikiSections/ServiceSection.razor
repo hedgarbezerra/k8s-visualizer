@@ -1,0 +1,39 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("Service.Block01"),
+        new WikiDiagramItem("""
+flowchart LR
+    C[Client] --> S[Service]
+    S --> P1[Pod]
+    S --> P2[Pod]
+    S --> P3[Pod]
+"""),
+        new WikiParagraphBlock("Service.Block03"),
+        new WikiListItemBlock("Service.Block04"),
+        new WikiListItemBlock("Service.Block05"),
+        new WikiListItemBlock("Service.Block06"),
+        new WikiListItemBlock("Service.Block07")
+        ,new WikiInternalLinkBlock("ingress-e-gateway-api", "IngressEGatewayApi.Title"),
+        new WikiInternalLinkBlock("networkpolicy", "Networkpolicy.Title"),
+        new WikiCodeItem("yaml", """
+apiVersion: v1
+kind: Service
+metadata:
+  name: web
+spec:
+  selector:
+    app: web
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+  type: ClusterIP
+""")
+    ];
+}

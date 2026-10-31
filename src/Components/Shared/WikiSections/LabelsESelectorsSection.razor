@@ -1,0 +1,30 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("LabelsESelectors.Block01"),
+        new WikiCodeItem("yaml", """
+metadata:
+  labels:
+    app: api
+    environment: production
+"""),
+        new WikiParagraphBlock("LabelsESelectors.Block03"),
+        new WikiCodeItem("yaml", """
+selector:
+  matchLabels:
+    app: api
+"""),
+        new WikiParagraphBlock("LabelsESelectors.Block05"),
+        new WikiDiagramItem("""
+flowchart LR
+    S[Service selector: app=api] --> P1[Pod app=api]
+    S --> P2[Pod app=api]
+    S -. não seleciona .-> P3[Pod app=worker]
+""")
+    ];
+}

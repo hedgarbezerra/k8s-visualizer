@@ -1,5 +1,6 @@
 @implements IDisposable
-@inject KubernetesClusterService ClusterService
+@inject ClusterService ClusterService
+@inject ApplicationEventManager AppEvents
 @inject IStringLocalizer<AppStrings> L
 
 <MudDivider Class="mb-3" />
@@ -35,20 +36,20 @@ else
 @code {
     protected override async Task OnInitializedAsync()
     {
-        ClusterService.Changed += OnServiceChanged;
-        await ClusterService.EnsureProfilesLoadedAsync();
+        AppEvents.Changed += OnServiceChanged;
+        await AppEvents.EnsureProfilesLoadedAsync();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
-            await ClusterService.RestoreLastSelectionAsync();
+            await AppEvents.RestoreLastSelectionAsync();
     }
 
-    private Task OnConnectionChanged(string? profileId) => ClusterService.SelectConnectionAsync(profileId);
+    private Task OnConnectionChanged(string? profileId) => AppEvents.SelectConnectionAsync(profileId);
 
-    private Task OnNamespaceChanged(string? namespaceName) => ClusterService.SelectNamespaceAsync(namespaceName);
+    private Task OnNamespaceChanged(string? namespaceName) => AppEvents.SelectNamespaceAsync(namespaceName);
 
     private void OnServiceChanged() => _ = InvokeAsync(StateHasChanged);
-    public void Dispose() => ClusterService.Changed -= OnServiceChanged;
+    public void Dispose() => AppEvents.Changed -= OnServiceChanged;
 }

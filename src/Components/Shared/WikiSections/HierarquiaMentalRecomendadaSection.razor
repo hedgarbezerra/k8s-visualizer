@@ -1,0 +1,62 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("HierarquiaMentalRecomendada.Block01"),
+        new WikiCodeItem("text", """
+Cluster
+│
+├── Control Plane
+│
+├── Nodes
+│   │
+│   └── Pods
+│       │
+│       └── Containers
+│
+└── Namespaces
+    │
+    └── Workloads
+        │
+        ├── Deployment
+        │   └── ReplicaSet
+        │       └── Pods
+        │
+        ├── StatefulSet
+        │   └── Pods
+        │
+        ├── DaemonSet
+        │   └── Pods
+        │
+        └── Jobs
+            └── Pods
+"""),
+        new WikiParagraphBlock("HierarquiaMentalRecomendada.Block03"),
+        new WikiCodeItem("text", """
+Service
+    └── seleciona Pods
+Ingress / Gateway
+    └── direciona tráfego para Services
+ConfigMap
+    └── fornece configuração aos Pods
+Secret
+    └── fornece dados sensíveis aos Pods
+PVC
+    └── fornece armazenamento aos Pods
+HPA
+    └── controla escala de Workloads
+PDB
+    └── protege disponibilidade dos Pods
+Scheduler
+    └── decide em qual Node o Pod executará
+RBAC
+    └── controla permissões
+NetworkPolicy
+    └── controla comunicação entre Pods
+""")
+    ];
+}

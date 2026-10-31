@@ -1,0 +1,23 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("Practical.PoliciesScheduling.Block01"),
+        new WikiCodeItem("yaml", """
+apiVersion: v1
+kind: ResourceQuota
+metadata: { name: team-budget }
+spec:
+  hard: { pods: "20", requests.cpu: "4", requests.memory: 8Gi }
+"""),
+        new WikiParagraphBlock("Practical.PoliciesScheduling.Block03"),
+        new WikiReferenceBlock("https://kubernetes.io/docs/concepts/services-networking/network-policies/", "NetworkPolicy"),
+        new WikiReferenceBlock("https://kubernetes.io/docs/concepts/policy/resource-quotas/", "ResourceQuota"),
+        new WikiReferenceBlock("https://kubernetes.io/docs/concepts/policy/limit-range/", "LimitRange"),
+        new WikiReferenceBlock("https://kubernetes.io/docs/concepts/scheduling-eviction/", "agendamento")
+    ];
+}

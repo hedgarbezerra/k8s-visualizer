@@ -1,0 +1,160 @@
+<div class="wiki-layout">
+    <aside class="wiki-index pa-4" aria-label="@L["Wiki.Contents"]">
+        <MudText Typo="Typo.h6" Class="mb-3">@L["Wiki.Contents"]</MudText>
+        <nav aria-label="@L["Wiki.Contents"]">
+            @foreach (var group in IndexGroups)
+            {
+                <section class="wiki-index-group">
+                    <MudText Typo="Typo.subtitle2">@group.Title</MudText>
+                    <ol start="@group.StartNumber">
+                        @foreach (var heading in group.Headings)
+                        {
+                            <li class="@(heading.Id == _currentSectionId ? "wiki-index-active" : string.Empty)">
+                                <a href="/wiki#@heading.Id" @onclick="() => NavigateToHeadingAsync(heading.Id)" @onclick:preventDefault="true">@heading.Title</a>
+                            </li>
+                        }
+                    </ol>
+                </section>
+            }
+        </nav>
+    </aside>
+    <div class="wiki-main">
+        <nav class="wiki-breadcrumb" aria-label="Breadcrumb">
+            <a href="/wiki" @onclick:preventDefault="true" @onclick="NavigateToTopAsync">@L["Wiki.Contents"]</a>
+            @if (CurrentHeading is { } current)
+            {
+                <span aria-hidden="true">›</span><span>@current.GroupTitle</span><span aria-hidden="true">›</span>
+                <a href="/wiki#@current.Id" @onclick="() => NavigateToHeadingAsync(current.Id)" @onclick:preventDefault="true">@current.Title</a>
+            }
+        </nav>
+        <div @ref="_articleHost" class="wiki-article">
+            <MudPaper Class="wiki-intro pa-6" Elevation="1">
+                <MudText Typo="Typo.h4">@L["Wiki.IntroTitle"]</MudText>
+                <MudText Typo="Typo.body1">@L["Wiki.IntroDescription"]</MudText>
+            </MudPaper>
+            <div class="wiki-sections">
+                @foreach (var section in ResolvedSections)
+                {
+                    <MudPaper @key="section.Id" Class="wiki-section-card pa-5">
+                        <DynamicComponent Type="section.ComponentType" Parameters="@ParametersFor(section)" />
+                    </MudPaper>
+                }
+            </div>
+        </div>
+        <MudFab Class="wiki-back-to-top" Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.ArrowUpward"
+                aria-label="@L["Wiki.BackToTop"]" title="@L["Wiki.BackToTop"]" OnClick="NavigateToTopAsync" />
+    </div>
+</div>
+@implements IAsyncDisposable
+@inject IStringLocalizer<WikiResources> L
+@inject IJSRuntime JS
+
+@code {
+    private static readonly WikiSectionDefinition[] Sections =
+    [
+        new(1, "visao-geral", "VisaoGeral.Title", "Groups.Foundations", typeof(OverviewSection)),
+        new(2, "cluster", "Cluster.Title", "Groups.Foundations", typeof(ClusterSection)),
+        new(3, "control-plane", "ControlPlane.Title", "Groups.Foundations", typeof(ControlPlaneSection)),
+        new(4, "worker-node", "WorkerNode.Title", "Groups.Foundations", typeof(WorkerNodeSection)),
+        new(5, "namespace", "Namespace.Title", "Groups.Foundations", typeof(NamespaceSection)),
+        new(6, "workloads", "Workloads.Title", "Groups.Workloads", typeof(WorkloadsSection)),
+        new(7, "deployment", "Deployment.Title", "Groups.Workloads", typeof(DeploymentSection)),
+        new(8, "replicaset", "Replicaset.Title", "Groups.Workloads", typeof(ReplicaSetSection)),
+        new(9, "pod", "Pod.Title", "Groups.Workloads", typeof(PodSection)),
+        new(10, "containers", "Containers.Title", "Groups.Workloads", typeof(ContainersSection)),
+        new(11, "labels-e-selectors", "LabelsESelectors.Title", "Groups.Networking", typeof(LabelsESelectorsSection)),
+        new(12, "service", "Service.Title", "Groups.Networking", typeof(ServiceSection)),
+        new(13, "ingress-e-gateway-api", "IngressEGatewayApi.Title", "Groups.Networking", typeof(IngressAndGatewayApiSection)),
+        new(14, "configmap", "Configmap.Title", "Groups.Configuration", typeof(ConfigMapSection)),
+        new(15, "secret", "Secret.Title", "Groups.Configuration", typeof(SecretSection)),
+        new(16, "storage", "Storage.Title", "Groups.Configuration", typeof(StorageSection)),
+        new(17, "persistentvolumeclaim", "Persistentvolumeclaim.Title", "Groups.Configuration", typeof(PersistentVolumeClaimSection)),
+        new(18, "persistentvolume", "Persistentvolume.Title", "Groups.Configuration", typeof(PersistentVolumeSection)),
+        new(19, "storageclass", "Storageclass.Title", "Groups.Configuration", typeof(StorageClassSection)),
+        new(20, "statefulset", "Statefulset.Title", "Groups.Stateful", typeof(StatefulSetSection)),
+        new(21, "daemonset", "Daemonset.Title", "Groups.Stateful", typeof(DaemonSetSection)),
+        new(22, "job-e-cronjob", "JobECronjob.Title", "Groups.Stateful", typeof(JobAndCronJobSection)),
+        new(23, "requests-e-limits", "RequestsELimits.Title", "Groups.Stateful", typeof(RequestsAndLimitsSection)),
+        new(24, "scheduling", "Scheduling.Title", "Groups.Scheduling", typeof(SchedulingSection)),
+        new(25, "node-affinity", "NodeAffinity.Title", "Groups.Scheduling", typeof(NodeAffinitySection)),
+        new(26, "pod-anti-affinity", "PodAntiAffinity.Title", "Groups.Scheduling", typeof(PodAntiAffinitySection)),
+        new(27, "taints-e-tolerations", "TaintsETolerations.Title", "Groups.Scheduling", typeof(TaintsETolerationsSection)),
+        new(28, "topology-spread-constraints", "TopologySpreadConstraints.Title", "Groups.Scheduling", typeof(TopologySpreadConstraintsSection)),
+        new(29, "health-probes", "HealthProbes.Title", "Groups.Availability", typeof(HealthProbesSection)),
+        new(30, "horizontal-pod-autoscaler-hpa", "HorizontalPodAutoscalerHpa.Title", "Groups.Availability", typeof(HorizontalPodAutoscalerSection)),
+        new(31, "vertical-pod-autoscaler-vpa", "VerticalPodAutoscalerVpa.Title", "Groups.Availability", typeof(VerticalPodAutoscalerSection)),
+        new(32, "poddisruptionbudget-pdb", "PoddisruptionbudgetPdb.Title", "Groups.Availability", typeof(PodDisruptionBudgetSection)),
+        new(33, "priorityclass", "Priorityclass.Title", "Groups.Availability", typeof(PriorityClassSection)),
+        new(34, "serviceaccount", "Serviceaccount.Title", "Groups.Security", typeof(ServiceAccountSection)),
+        new(35, "rbac", "Rbac.Title", "Groups.Security", typeof(RBACSection)),
+        new(36, "securitycontext", "Securitycontext.Title", "Groups.Security", typeof(SecurityContextSection)),
+        new(37, "networkpolicy", "Networkpolicy.Title", "Groups.Security", typeof(NetworkPolicySection)),
+        new(38, "resourcequota", "Resourcequota.Title", "Groups.Security", typeof(ResourceQuotaSection)),
+        new(39, "limitrange", "Limitrange.Title", "Groups.Security", typeof(LimitRangeSection)),
+        new(40, "crd-custom-resource-definition", "CrdCustomResourceDefinition.Title", "Groups.Operations", typeof(CustomResourceDefinitionSection)),
+        new(41, "controller", "Controller.Title", "Groups.Operations", typeof(ControllerSection)),
+        new(42, "operator", "Operator.Title", "Groups.Operations", typeof(OperatorSection)),
+        new(43, "admission-controllers", "AdmissionControllers.Title", "Groups.Operations", typeof(AdmissionControllersSection)),
+        new(44, "helm", "Helm.Title", "Groups.Operations", typeof(HelmSection)),
+        new(45, "kustomize", "Kustomize.Title", "Groups.Operations", typeof(KustomizeSection)),
+        new(46, "argo-cd-e-gitops", "ArgoCdEGitops.Title", "Groups.Operations", typeof(ArgoCdAndGitOpsSection)),
+        new(47, "observabilidade", "Observabilidade.Title", "Groups.Operations", typeof(ObservabilidadeSection)),
+        new(48, "como-os-conceitos-se-relacionam", "ComoOsConceitosSeRelacionam.Title", "Groups.Architecture", typeof(ComoOsConceitosSeRelacionamSection)),
+        new(49, "hierarquia-mental-recomendada", "HierarquiaMentalRecomendada.Title", "Groups.Architecture", typeof(HierarquiaMentalRecomendadaSection)),
+        new(50, "arquitetura-de-uma-aplicacao-tipica", "ArquiteturaDeUmaAplicacaoTipica.Title", "Groups.Architecture", typeof(ArquiteturaDeUmaAplicacaoTipicaSection)),
+        new(51, "ordem-recomendada-para-estudar", "OrdemRecomendadaParaEstudar.Title", "Groups.Architecture", typeof(OrdemRecomendadaParaEstudarSection)),
+        new(52, "resumo-final", "ResumoFinal.Title", "Groups.Architecture", typeof(ResumoFinalSection)),
+        new(53, "practical-deployment-statefulset-daemonset", "Practical.DeploymentStatefulsetDaemonset.Title", "Groups.PracticalExamples", typeof(DeploymentComparisonSection)),
+        new(54, "practical-service-ingress-gateway", "Practical.ServiceIngressGateway.Title", "Groups.PracticalExamples", typeof(ServiceRoutingComparisonSection)),
+        new(55, "practical-configuration-identity-permissions", "Practical.ConfigurationIdentityPermissions.Title", "Groups.PracticalExamples", typeof(ConfigurationIdentityComparisonSection)),
+        new(56, "practical-pvc-pv-storageclass", "Practical.PvcPvStorageclass.Title", "Groups.PracticalExamples", typeof(StorageComparisonSection)),
+        new(57, "practical-scaling-health-availability", "Practical.ScalingHealthAvailability.Title", "Groups.PracticalExamples", typeof(ScalingHealthComparisonSection)),
+        new(58, "practical-policies-scheduling", "Practical.PoliciesScheduling.Title", "Groups.PracticalExamples", typeof(PolicySchedulingComparisonSection)),
+        new(59, "practical-extensibility-delivery", "Practical.ExtensibilityDelivery.Title", "Groups.PracticalExamples", typeof(ExtensibilityDeliveryComparisonSection)),
+        new(60, "practical-namespace-pod-replicaset-labels", "Practical.NamespacePodReplicasetLabels.Title", "Groups.PracticalExamples", typeof(NamespacePodLabelsComparisonSection)),
+        new(61, "practical-priority-placement", "Practical.PriorityPlacement.Title", "Groups.PracticalExamples", typeof(PriorityPlacementComparisonSection)),
+        new(62, "practical-packaging-delivery", "Practical.PackagingDelivery.Title", "Groups.PracticalExamples", typeof(PackagingDeliveryExamplesSection))
+    ];
+
+    private ElementReference _articleHost;
+    private DotNetObjectReference<KubernetesWikiContent>? _selfReference;
+    private string? _currentSectionId;
+
+    private IReadOnlyList<ResolvedWikiSection> ResolvedSections => Sections.OrderBy(section => section.Order)
+        .Select(section => new ResolvedWikiSection(section.Order, section.Id, L[section.TitleKey].Value,
+            L[section.GroupKey].Value, section.ComponentType)).ToArray();
+
+    private IReadOnlyList<WikiIndexGroup> IndexGroups => ResolvedSections.GroupBy(section => section.GroupTitle)
+        .Select(group => new WikiIndexGroup(group.Key, group.First().Order,
+            group.Select(section => new WikiHeading(section.Id, section.Title, section.GroupTitle)).ToArray())).ToArray();
+
+    private WikiHeading? CurrentHeading => ResolvedSections.FirstOrDefault(section => section.Id == _currentSectionId) is { } current
+        ? new WikiHeading(current.Id, current.Title, current.GroupTitle) : null;
+
+    private static Dictionary<string, object> ParametersFor(ResolvedWikiSection section) => new()
+    {
+        ["Section"] = new WikiSectionModel(section.Id, section.Title, section.GroupTitle)
+    };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        _selfReference = DotNetObjectReference.Create(this);
+        await JS.InvokeVoidAsync("kvWiki.bind", _articleHost, _selfReference,
+            L["Wiki.CopyCode"].Value, L["Wiki.CopiedCode"].Value, L["Wiki.DiagramError"].Value);
+    }
+
+    private Task NavigateToHeadingAsync(string id) => JS.InvokeVoidAsync("kvWiki.scrollTo", id).AsTask();
+    private Task NavigateToTopAsync() => JS.InvokeVoidAsync("kvWiki.scrollToTop").AsTask();
+
+    [JSInvokable]
+    public Task OnSectionChanged(string id) => InvokeAsync(() => { _currentSectionId = id; StateHasChanged(); });
+
+    public async ValueTask DisposeAsync()
+    {
+        try { await JS.InvokeVoidAsync("kvWiki.unbind", _articleHost); }
+        catch (JSDisconnectedException) { }
+        _selfReference?.Dispose();
+    }
+
+}

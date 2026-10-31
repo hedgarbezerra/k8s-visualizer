@@ -1,0 +1,38 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("HealthProbes.Block01"),
+        new WikiHeadingBlock("HealthProbes.Block02", 3),
+        new WikiParagraphBlock("HealthProbes.Block03"),
+        new WikiHeadingBlock("HealthProbes.Block04", 3),
+        new WikiParagraphBlock("HealthProbes.Block05"),
+        new WikiHeadingBlock("HealthProbes.Block06", 3),
+        new WikiParagraphBlock("HealthProbes.Block07"),
+        new WikiDiagramItem("""
+flowchart LR
+    C[Container]
+    C --> S[Startup]
+    S --> R[Readiness]
+    R --> L[Liveness]
+"""),
+        new WikiParagraphBlock("HealthProbes.Block09"),
+        new WikiCodeItem("text", """
+Startup
+   ↓
+Aplicação iniciou?
+   ↓
+Readiness
+   ↓
+Pode receber tráfego?
+   ↓
+Liveness
+   ↓
+Continua saudável?
+""")
+    ];
+}

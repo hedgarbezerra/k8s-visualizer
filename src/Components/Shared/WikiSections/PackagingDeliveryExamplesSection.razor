@@ -1,0 +1,16 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiCodeItem("bash", """
+helm upgrade --install api ./chart --namespace team-a --create-namespace
+kubectl apply -k ./overlays/dev
+argocd app get api-team-a
+"""),
+        new WikiParagraphBlock("Practical.PackagingDelivery.Block02")
+    ];
+}

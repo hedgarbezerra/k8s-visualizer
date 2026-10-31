@@ -1,0 +1,74 @@
+@using System.Text.RegularExpressions
+
+@((RenderFragment)(builder => BuildLinkedContent(builder)))
+
+@code {
+    [Parameter, EditorRequired] public string Text { get; set; } = string.Empty;
+
+    private static readonly (string Term, string Slug)[] ResourceTerms =
+    [
+        ("PersistentVolumeClaim", "persistentvolumeclaim"), ("PersistentVolumeClaims", "persistentvolumeclaim"),
+        ("Persistent Volume Claim", "persistentvolumeclaim"), ("Persistent Volume Claims", "persistentvolumeclaim"),
+        ("persistent volume claim", "persistentvolumeclaim"), ("persistent volume claims", "persistentvolumeclaim"),
+        ("PersistentVolume", "persistentvolume"), ("Persistent Volumes", "persistentvolume"),
+        ("persistent volume", "persistentvolume"), ("persistent volumes", "persistentvolume"),
+        ("StorageClass", "storageclass"), ("Storage Classes", "storageclass"), ("storage class", "storageclass"), ("storage classes", "storageclass"),
+        ("StatefulSet", "statefulset"), ("StatefulSets", "statefulset"), ("statefulsets", "statefulset"),
+        ("RoleBinding", "rbac"), ("RoleBindings", "rbac"), ("ClusterRoleBinding", "rbac"), ("ClusterRoleBindings", "rbac"),
+        ("ClusterRole", "rbac"), ("ClusterRoles", "rbac"), ("Role", "rbac"), ("Roles", "rbac"),
+        ("GatewayClass", "ingress-e-gateway-api"), ("Gateway", "ingress-e-gateway-api"), ("HTTPRoute", "ingress-e-gateway-api"),
+        ("ExternalSecret", "secret"), ("ExternalSecrets", "secret"), ("SecretProviderClass", "secret"),
+        ("PVCs", "persistentvolumeclaim"), ("PVC", "persistentvolumeclaim"),
+        ("PVs", "persistentvolume"), ("PV", "persistentvolume"),
+        ("HPA", "horizontal-pod-autoscaler-hpa"), ("HPAs", "horizontal-pod-autoscaler-hpa"),
+        ("VPA", "vertical-pod-autoscaler-vpa"), ("VPAs", "vertical-pod-autoscaler-vpa"),
+        ("PDB", "poddisruptionbudget-pdb"), ("PDBs", "poddisruptionbudget-pdb"),
+        ("CRDs", "crd-custom-resource-definition"),
+        ("CustomResourceDefinition", "crd-custom-resource-definition"), ("CustomResourceDefinitions", "crd-custom-resource-definition"),
+        ("DaemonSet", "daemonset"), ("DaemonSets", "daemonset"), ("daemonsets", "daemonset"),
+        ("ReplicaSet", "replicaset"), ("ReplicaSets", "replicaset"), ("replicasets", "replicaset"),
+        ("Deployment", "deployment"), ("Deployments", "deployment"), ("deployments", "deployment"),
+        ("CronJob", "job-e-cronjob"), ("CronJobs", "job-e-cronjob"), ("cronjobs", "job-e-cronjob"),
+        ("HorizontalPodAutoscaler", "horizontal-pod-autoscaler-hpa"), ("Horizontal Pod Autoscaler", "horizontal-pod-autoscaler-hpa"),
+        ("VerticalPodAutoscaler", "vertical-pod-autoscaler-vpa"), ("Vertical Pod Autoscaler", "vertical-pod-autoscaler-vpa"),
+        ("PodDisruptionBudget", "poddisruptionbudget-pdb"), ("Pod Disruption Budget", "poddisruptionbudget-pdb"),
+        ("NetworkPolicy", "networkpolicy"), ("Network Policies", "networkpolicy"), ("Network Policy", "networkpolicy"), ("network policies", "networkpolicy"),
+        ("ServiceAccount", "serviceaccount"), ("Service Accounts", "serviceaccount"), ("service accounts", "serviceaccount"),
+        ("ConfigMap", "configmap"), ("ConfigMaps", "configmap"), ("configmaps", "configmap"),
+        ("Namespace", "namespace"), ("Namespaces", "namespace"), ("namespaces", "namespace"),
+        ("PriorityClass", "priorityclass"), ("Priority Classes", "priorityclass"), ("priority classes", "priorityclass"),
+        ("ResourceQuota", "resourcequota"), ("ResourceQuotas", "resourcequota"), ("resource quotas", "resourcequota"),
+        ("LimitRange", "limitrange"), ("LimitRanges", "limitrange"), ("limit ranges", "limitrange"),
+        ("Ingress", "ingress-e-gateway-api"), ("Ingresses", "ingress-e-gateway-api"),
+        ("Secret", "secret"), ("Secrets", "secret"), ("secrets", "secret"),
+        ("Service", "service"), ("Services", "service"), ("services", "service"),
+        ("Container", "containers"), ("Containers", "containers"), ("containers", "containers"),
+        ("Pod", "pod"), ("Pods", "pod"), ("pods", "pod"),
+        ("Job", "job-e-cronjob"), ("Jobs", "job-e-cronjob"), ("jobs", "job-e-cronjob"),
+        ("Persistent Volume", "persistentvolume"), ("Volume", "storage"), ("Volumes", "storage"), ("volumes", "storage"),
+        ("RBAC", "rbac"), ("Custom Resource Definition", "crd-custom-resource-definition"), ("CRD", "crd-custom-resource-definition"),
+        ("Node", "worker-node"), ("Nodes", "worker-node"), ("nodes", "worker-node"),
+        ("Cluster", "cluster"), ("Clusters", "cluster"), ("clusters", "cluster")
+    ];
+
+    private static readonly Regex ResourcePattern = new(
+        $@"(?<![\p{{L}}\p{{N}}_])(?:{string.Join("|", ResourceTerms.Select(x => Regex.Escape(x.Term)).OrderByDescending(x => x.Length))})(?![\p{{L}}\p{{N}}_])",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+    private void BuildLinkedContent(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder builder)
+    {
+        var position = 0;
+        foreach (Match match in ResourcePattern.Matches(Text))
+        {
+            if (match.Index > position) builder.AddContent(0, Text[position..match.Index]);
+            var slug = ResourceTerms.First(x => string.Equals(x.Term, match.Value, StringComparison.OrdinalIgnoreCase)).Slug;
+            builder.OpenElement(1, "a");
+            builder.AddAttribute(2, "href", $"/wiki#{slug}");
+            builder.AddAttribute(3, "class", "wiki-inline-link");
+            builder.AddContent(4, match.Value);
+            builder.CloseElement();
+            position = match.Index + match.Length;
+        }
+        if (position < Text.Length) builder.AddContent(5, Text[position..]);
+    }
+}

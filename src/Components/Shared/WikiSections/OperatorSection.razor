@@ -1,0 +1,30 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("Operator.Block01"),
+        new WikiListItemBlock("Operator.Block02"),
+        new WikiListItemBlock("Operator.Block03"),
+        new WikiListItemBlock("Operator.Block04"),
+        new WikiListItemBlock("Operator.Block05"),
+        new WikiListItemBlock("Operator.Block06"),
+        new WikiListItemBlock("Operator.Block07"),
+        new WikiListItemBlock("Operator.Block08"),
+        new WikiListItemBlock("Operator.Block09"),
+        new WikiCodeItem("text", """
+Custom Resource
+      |
+      v
+Operator
+      |
+      +-- Deployment
+      +-- Service
+      +-- PVC
+      +-- Secret
+""")
+    ];
+}

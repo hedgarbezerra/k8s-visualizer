@@ -1,0 +1,18 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("Controller.Block01"),
+        new WikiDiagramItem("""
+flowchart LR
+    D[Desired State] --> C[Controller]
+    C --> A[Actual State]
+    A --> C
+"""),
+        new WikiParagraphBlock("Controller.Block03")
+    ];
+}

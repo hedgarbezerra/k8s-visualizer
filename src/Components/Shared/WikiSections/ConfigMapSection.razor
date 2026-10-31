@@ -1,0 +1,28 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("Configmap.Block01"),
+        new WikiCodeItem("yaml", """
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-config
+data:
+  ASPNETCORE_ENVIRONMENT: Production
+"""),
+        new WikiParagraphBlock("Configmap.Block03"),
+        new WikiListItemBlock("Configmap.Block04"),
+        new WikiListItemBlock("Configmap.Block05"),
+        new WikiDiagramItem("""
+flowchart LR
+    CM[ConfigMap] --> P[Pod]
+""")
+        ,new WikiInternalLinkBlock("secret", "Secret.Title"),
+        new WikiInternalLinkBlock("deployment", "Deployment.Title")
+    ];
+}

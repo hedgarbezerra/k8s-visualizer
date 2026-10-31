@@ -1,0 +1,36 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("VerticalPodAutoscalerVpa.Block01"),
+        new WikiParagraphBlock("VerticalPodAutoscalerVpa.Prerequisites"),
+        new WikiCodeItem("text", """
+VPA
+ |
+ +-- CPU request
+ +-- Memory request
+"""),
+        new WikiParagraphBlock("VerticalPodAutoscalerVpa.Block03"),
+        new WikiCodeItem("text", """
+HPA -> mais/menos Pods
+VPA -> mais/menos recursos por Pod
+"""),
+        new WikiCodeItem("yaml", """
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: web
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: web
+  updatePolicy:
+    updateMode: Off
+""")
+    ];
+}

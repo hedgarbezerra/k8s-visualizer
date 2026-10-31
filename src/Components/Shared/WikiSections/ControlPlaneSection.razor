@@ -1,0 +1,37 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("ControlPlane.Block01"),
+        new WikiListItemBlock("ControlPlane.Block02"),
+        new WikiListItemBlock("ControlPlane.Block03"),
+        new WikiListItemBlock("ControlPlane.Block04"),
+        new WikiListItemBlock("ControlPlane.Block05"),
+        new WikiDiagramItem("""
+flowchart LR
+    U[kubectl / API Client] --> API[API Server]
+    API --> ETCD[(etcd)]
+    API --> SCH[Scheduler]
+    API --> CM[Controller Manager]
+    SCH --> N[Nodes]
+    CM --> N
+"""),
+        new WikiHeadingBlock("ControlPlane.Block07", 3),
+        new WikiParagraphBlock("ControlPlane.Block08"),
+        new WikiCodeItem("bash", """
+kubectl get pods
+kubectl apply -f deployment.yaml
+"""),
+        new WikiParagraphBlock("ControlPlane.Block10"),
+        new WikiHeadingBlock("ControlPlane.Block11", 3),
+        new WikiParagraphBlock("ControlPlane.Block12"),
+        new WikiHeadingBlock("ControlPlane.Block13", 3),
+        new WikiParagraphBlock("ControlPlane.Block14"),
+        new WikiHeadingBlock("ControlPlane.Block15", 3),
+        new WikiParagraphBlock("ControlPlane.Block16")
+    ];
+}

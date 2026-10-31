@@ -1,0 +1,23 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("TopologySpreadConstraints.Block01"),
+        new WikiCodeItem("text", """
+Zone A
+  Pod
+  Pod
+Zone B
+  Pod
+  Pod
+Zone C
+  Pod
+  Pod
+"""),
+        new WikiParagraphBlock("TopologySpreadConstraints.Block03")
+    ];
+}

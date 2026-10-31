@@ -1,0 +1,31 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("RequestsELimits.Block01"),
+        new WikiCodeItem("yaml", """
+resources:
+  requests:
+    cpu: "250m"
+    memory: "256Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+"""),
+        new WikiHeadingBlock("RequestsELimits.Block03", 3),
+        new WikiParagraphBlock("RequestsELimits.Block04"),
+        new WikiHeadingBlock("RequestsELimits.Block05", 3),
+        new WikiParagraphBlock("RequestsELimits.Block06"),
+        new WikiCodeItem("text", """
+Pod
+ |
+ +-- requests -> planejamento/scheduling
+ |
+ +-- limits   -> limite de execução
+""")
+    ];
+}

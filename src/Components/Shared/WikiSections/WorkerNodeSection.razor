@@ -1,0 +1,29 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("WorkerNode.Block01"),
+        new WikiParagraphBlock("WorkerNode.CreationNote"),
+        new WikiCodeItem("bash", """
+kubectl get nodes -o wide
+kubectl describe node <node-name>
+"""),
+        new WikiDiagramItem("""
+flowchart TD
+    N[Worker Node]
+    N --> K[Kubelet]
+    N --> KPROXY[kube-proxy]
+    N --> R[Container Runtime]
+    N --> P1[Pod]
+    N --> P2[Pod]
+"""),
+        new WikiParagraphBlock("WorkerNode.Block03"),
+        new WikiListItemBlock("WorkerNode.Block04"),
+        new WikiListItemBlock("WorkerNode.Block05"),
+        new WikiListItemBlock("WorkerNode.Block06")
+    ];
+}

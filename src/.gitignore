@@ -1,5 +1,4 @@
 **/App_Data/DataProtection-Keys/
-**/App_Data/connections.json
 **/App_Data/*.db
 **/App_Data/*.db-shm
 **/App_Data/*.db-wal

@@ -1,0 +1,63 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("ResumoFinal.Block01"),
+        new WikiCodeItem("text", """
+CLUSTER
+│
+├── CONTROL PLANE
+│   ├── API Server
+│   ├── Scheduler
+│   ├── Controllers
+│   └── etcd
+│
+├── NODES
+│   └── PODS
+│       └── CONTAINERS
+│
+└── NAMESPACES
+    └── WORKLOADS
+        ├── DEPLOYMENT
+        │   └── REPLICASET
+        │       └── PODS
+        │
+        ├── STATEFULSET
+        │   └── PODS
+        │
+        ├── DAEMONSET
+        │   └── PODS
+        │
+        └── JOB / CRONJOB
+            └── PODS
+
+RELACIONAMENTOS TRANSVERSAIS
+SERVICE
+    └── seleciona PODS
+INGRESS / GATEWAY
+    └── direciona para SERVICES
+CONFIGMAP / SECRET
+    └── configuram PODS
+PVC / PV / STORAGECLASS
+    └── fornecem STORAGE aos PODS
+HPA / VPA / PDB
+    └── controlam comportamento dos WORKLOADS
+SCHEDULER
+    └── coloca PODS em NODES
+RBAC / SERVICEACCOUNT
+    └── controlam permissões
+NETWORKPOLICY
+    └── controla comunicação
+CRD / OPERATOR
+    └── estendem o próprio Kubernetes
+HELM / KUSTOMIZE / ARGO CD
+    └── empacotam, configuram e entregam recursos
+"""),
+        new WikiParagraphBlock("ResumoFinal.Block03"),
+        new WikiQuoteBlock("ResumoFinal.Block04")
+    ];
+}

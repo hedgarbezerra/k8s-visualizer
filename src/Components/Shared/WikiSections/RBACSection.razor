@@ -1,0 +1,80 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("Rbac.Block01"),
+        new WikiListItemBlock("Rbac.Block02"),
+        new WikiListItemBlock("Rbac.Block03"),
+        new WikiListItemBlock("Rbac.Block04"),
+        new WikiListItemBlock("Rbac.Block05"),
+        new WikiCodeItem("text", """
+ServiceAccount
+      |
+      v
+RoleBinding
+      |
+      v
+Role
+      |
+      v
+Permissions
+"""),
+        new WikiParagraphBlock("Rbac.Block07"),
+        new WikiCodeItem("text", """
+get pods
+list pods
+watch pods
+"""),
+        new WikiCodeItem("yaml", """
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: pod-reader
+  namespace: demo
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: app-pod-reader
+  namespace: demo
+subjects:
+  - kind: ServiceAccount
+    name: app-reader
+    namespace: demo
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: pod-reader
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: node-reader
+rules:
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: app-node-reader
+subjects:
+  - kind: ServiceAccount
+    name: app-reader
+    namespace: demo
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: node-reader
+""")
+    ];
+}

@@ -1,0 +1,26 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("Helm.Block01"),
+        new WikiListItemBlock("Helm.Block02"),
+        new WikiListItemBlock("Helm.Block03"),
+        new WikiListItemBlock("Helm.Block04"),
+        new WikiListItemBlock("Helm.Block05"),
+        new WikiCodeItem("text", """
+Chart
+├── templates/
+├── values.yaml
+└── Chart.yaml
+"""),
+        new WikiParagraphBlock("Helm.Block07"),
+        new WikiCodeItem("bash", """
+helm install my-api ./chart
+"""),
+        new WikiParagraphBlock("Helm.Block09")
+    ];
+}

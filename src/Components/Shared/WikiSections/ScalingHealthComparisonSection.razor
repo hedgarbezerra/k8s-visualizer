@@ -1,0 +1,30 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("Practical.ScalingHealthAvailability.Block01"),
+        new WikiCodeItem("yaml", """
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: api }
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: api }
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: { type: Utilization, averageUtilization: 70 }
+"""),
+        new WikiParagraphBlock("Practical.ScalingHealthAvailability.Block03"),
+        new WikiReferenceBlock("https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/", "HPA"),
+        new WikiReferenceBlock("https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes", "probes"),
+        new WikiReferenceBlock("https://kubernetes.io/docs/concepts/workloads/pods/disruptions/", "disrupções/PDB"),
+        new WikiReferenceBlock("https://github.com/kubernetes/autoscaler/tree/master/vertical-pod-autoscaler", "VPA")
+    ];
+}

@@ -1,0 +1,28 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("Scheduling.Block01"),
+        new WikiDiagramItem("""
+flowchart LR
+    P[Pending Pod] --> S[Scheduler]
+    S --> N1[Node 1]
+    S --> N2[Node 2]
+    S --> N3[Node 3]
+"""),
+        new WikiParagraphBlock("Scheduling.Block03"),
+        new WikiListItemBlock("Scheduling.Block04"),
+        new WikiListItemBlock("Scheduling.Block05"),
+        new WikiListItemBlock("Scheduling.Block06"),
+        new WikiListItemBlock("Scheduling.Block07"),
+        new WikiListItemBlock("Scheduling.Block08"),
+        new WikiListItemBlock("Scheduling.Block09"),
+        new WikiListItemBlock("Scheduling.Block10"),
+        new WikiListItemBlock("Scheduling.Block11"),
+        new WikiListItemBlock("Scheduling.Block12")
+    ];
+}

@@ -1,0 +1,36 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("Practical.NamespacePodReplicasetLabels.Block01"),
+        new WikiParagraphBlock("Practical.NamespacePodReplicasetLabels.Block02"),
+        new WikiCodeItem("yaml", """
+apiVersion: v1
+kind: Namespace
+metadata: { name: team-a }
+---
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: api-example
+  namespace: team-a
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: api } }
+  template:
+    metadata: { labels: { app: api } }
+    spec:
+      containers: [{ name: api, image: example/api:1.0 }]
+"""),
+        new WikiParagraphBlock("Practical.NamespacePodReplicasetLabels.Block04"),
+        new WikiReferenceBlock("https://kubernetes.io/docs/concepts/architecture/nodes/", "Nodes"),
+        new WikiReferenceBlock("https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/", "Namespaces"),
+        new WikiReferenceBlock("https://kubernetes.io/docs/concepts/workloads/pods/", "Pods"),
+        new WikiReferenceBlock("https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/", "ReplicaSets"),
+        new WikiReferenceBlock("https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/", "labels/selectors")
+    ];
+}

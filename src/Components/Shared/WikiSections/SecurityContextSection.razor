@@ -1,0 +1,21 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("Securitycontext.Block01"),
+        new WikiListItemBlock("Securitycontext.Block02"),
+        new WikiListItemBlock("Securitycontext.Block03"),
+        new WikiListItemBlock("Securitycontext.Block04"),
+        new WikiListItemBlock("Securitycontext.Block05"),
+        new WikiListItemBlock("Securitycontext.Block06"),
+        new WikiCodeItem("yaml", """
+securityContext:
+  runAsNonRoot: true
+  allowPrivilegeEscalation: false
+""")
+    ];
+}

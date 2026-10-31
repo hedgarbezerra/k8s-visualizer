@@ -1,0 +1,32 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("Persistentvolume.Block01"),
+        new WikiParagraphBlock("Persistentvolume.ExampleNote"),
+        new WikiDiagramItem("""
+flowchart LR
+    P[Pod] --> PVC[PVC]
+    PVC --> PV[PersistentVolume]
+    PV --> S[Storage Backend]
+"""),
+        new WikiCodeItem("yaml", """
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: local-data
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: /mnt/data
+""")
+    ];
+}

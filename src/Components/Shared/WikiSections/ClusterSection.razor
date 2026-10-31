@@ -1,0 +1,33 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("Cluster.Block01"),
+        new WikiParagraphBlock("Cluster.CreationNote"),
+        new WikiCodeItem("bash", """
+kubectl config current-context
+kubectl cluster-info
+kubectl get nodes
+"""),
+        new WikiDiagramItem("""
+flowchart TD
+    C[Cluster]
+    C --> CP[Control Plane]
+    C --> N[Worker Nodes]
+    C --> NS[Namespaces]
+"""),
+        new WikiParagraphBlock("Cluster.Block03"),
+        new WikiListItemBlock("Cluster.Block04"),
+        new WikiListItemBlock("Cluster.Block05"),
+        new WikiListItemBlock("Cluster.Block06"),
+        new WikiListItemBlock("Cluster.Block07"),
+        new WikiListItemBlock("Cluster.Block08"),
+        new WikiListItemBlock("Cluster.Block09"),
+        new WikiListItemBlock("Cluster.Block10"),
+        new WikiListItemBlock("Cluster.Block11")
+    ];
+}

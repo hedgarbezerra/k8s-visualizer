@@ -1,0 +1,33 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("Storageclass.Block01"),
+        new WikiCodeItem("text", """
+PVC
+ |
+ v
+StorageClass
+ |
+ v
+Dynamic Provisioning
+ |
+ v
+PV
+"""),
+        new WikiParagraphBlock("Storageclass.Block03"),
+        new WikiCodeItem("yaml", """
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: fast
+provisioner: example.com.csi.driver
+reclaimPolicy: Delete
+volumeBindingMode: WaitForFirstConsumer
+""")
+    ];
+}

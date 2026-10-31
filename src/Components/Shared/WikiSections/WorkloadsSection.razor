@@ -1,0 +1,26 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("Workloads.Block01"),
+        new WikiListItemBlock("Workloads.Block02"),
+        new WikiListItemBlock("Workloads.Block03"),
+        new WikiListItemBlock("Workloads.Block04"),
+        new WikiListItemBlock("Workloads.Block05"),
+        new WikiListItemBlock("Workloads.Block06"),
+        new WikiDiagramItem("""
+flowchart TD
+    C[Cluster] --> NS[Namespace]
+    NS --> W[Workloads]
+    W --> D[Deployment]
+    W --> SS[StatefulSet]
+    W --> DS[DaemonSet]
+    W --> J[Job]
+    W --> CJ[CronJob]
+""")
+    ];
+}

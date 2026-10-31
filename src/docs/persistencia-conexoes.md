@@ -2,11 +2,11 @@
 
 Os perfis cadastrados na página Configurações ficam no banco SQLite `App_Data/kubernetes-visualizer.db`. O banco guarda apenas o nome do perfil, o caminho do kubeconfig, o contexto Kubernetes e a última conexão/namespace selecionados; tokens e certificados continuam no kubeconfig e não são copiados para o banco. Na inicialização interativa, a aplicação reconecta ao último perfil e restaura o namespace salvo quando ele ainda existe.
 
-Na primeira inicialização após a migração, os perfis existentes em `App_Data/connections.json` são importados uma única vez. O JSON antigo é mantido como cópia local e não volta a ser usado como armazenamento.
+As conexões, a última seleção e as configurações editáveis da aplicação são armazenadas somente no SQLite. O app não lê nem grava um arquivo JSON de conexões. Os labels padrão para relacionar recursos no grafo são definidos em `GraphGrouping:DefaultRelatedLabelKeys` no `appsettings.json` e sempre fazem parte da lista efetiva. Os labels adicionais são configurados na página Configurações e armazenados em `application_settings`.
 
 ## Execução local
 
-O diretório `App_Data` fica dentro da raiz da aplicação e o SQLite permanece entre reinicializações do processo. Para mudar o caminho do banco, configure `ConnectionProfiles__DatabasePath` ou `ConnectionProfiles:DatabasePath`.
+O caminho do banco é resolvido a partir de `IWebHostEnvironment.ContentRootPath`, em `App_Data/kubernetes-visualizer.db`. A aplicação cria o diretório `App_Data`, o arquivo SQLite e suas tabelas automaticamente na inicialização. O banco permanece entre reinicializações do processo.
 
 ## Docker Compose
 
@@ -18,4 +18,4 @@ O volume só é apagado com uma remoção explícita, por exemplo `docker compos
 
 ## Kubernetes
 
-Se a aplicação for executada dentro de um Pod, monte um PersistentVolumeClaim em `/app/App_Data` (ou configure `ConnectionProfiles__DatabasePath` para um caminho persistente). Sem volume persistente, o SQLite sobrevive ao reinício do processo dentro do mesmo container, mas não à substituição do Pod.
+Se a aplicação for executada dentro de um Pod, monte um PersistentVolumeClaim em `/app/App_Data`. Sem volume persistente, o SQLite sobrevive ao reinício do processo dentro do mesmo container, mas não à substituição do Pod.

@@ -1,0 +1,80 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("IngressEGatewayApi.Block01"),
+        new WikiDiagramItem("""
+flowchart LR
+    U[Internet] --> G[Ingress / Gateway]
+    G --> S1[Service]
+    S1 --> P1[Pods]
+    G --> S2[Service]
+    S2 --> P2[Pods]
+"""),
+        new WikiParagraphBlock("IngressEGatewayApi.Block03"),
+        new WikiParagraphBlock("IngressEGatewayApi.GatewayPrerequisite"),
+        new WikiCodeItem("text", """
+Service
+    -> expõe uma aplicação dentro/através do cluster
+Ingress / Gateway
+    -> define como requisições externas chegam aos Services
+"""),
+        new WikiParagraphBlock("IngressEGatewayApi.Block05")
+        ,new WikiInternalLinkBlock("service", "Service.Title"),
+        new WikiInternalLinkBlock("networkpolicy", "Networkpolicy.Title"),
+        new WikiCodeItem("yaml", """
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: web
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: web.example.test
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web
+                port:
+                  number: 80
+"""),
+        new WikiCodeItem("yaml", """
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: public-gateway
+  namespace: demo
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      allowedRoutes:
+        namespaces:
+          from: Same
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: web
+  namespace: demo
+spec:
+  parentRefs:
+    - name: public-gateway
+  hostnames:
+    - web.example.test
+  rules:
+    - backendRefs:
+        - name: web
+          port: 80
+""")
+    ];
+}

@@ -1,0 +1,28 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("Containers.Block01"),
+        new WikiCodeItem("text", """
+Cluster
+└── Node
+    └── Pod
+        └── Container
+"""),
+        new WikiParagraphBlock("Containers.Block03"),
+        new WikiCodeItem("yaml", """
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app-with-container
+spec:
+  containers:
+    - name: app
+      image: nginx:1.27
+""")
+    ];
+}

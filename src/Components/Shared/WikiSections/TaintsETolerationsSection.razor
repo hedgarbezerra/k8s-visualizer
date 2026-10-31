@@ -1,0 +1,26 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("TaintsETolerations.Block01"),
+        new WikiCodeItem("text", """
+Node
+ |
+ +-- taint: workload=gpu
+"""),
+        new WikiParagraphBlock("TaintsETolerations.Block03"),
+        new WikiDiagramItem("""
+flowchart LR
+    N[Node with Taint] --> T[Toleration]
+    T --> P[Pod]
+"""),
+        new WikiParagraphBlock("TaintsETolerations.Block05"),
+        new WikiListItemBlock("TaintsETolerations.Block06"),
+        new WikiListItemBlock("TaintsETolerations.Block07"),
+        new WikiListItemBlock("TaintsETolerations.Block08")
+    ];
+}

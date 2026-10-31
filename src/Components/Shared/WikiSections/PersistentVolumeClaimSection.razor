@@ -1,0 +1,27 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("Persistentvolumeclaim.Block01"),
+        new WikiCodeItem("yaml", """
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+"""),
+        new WikiParagraphBlock("Persistentvolumeclaim.Block03")
+        ,new WikiInternalLinkBlock("persistentvolume", "Persistentvolume.Title"),
+        new WikiInternalLinkBlock("storageclass", "Storageclass.Title"),
+        new WikiInternalLinkBlock("statefulset", "Statefulset.Title")
+    ];
+}

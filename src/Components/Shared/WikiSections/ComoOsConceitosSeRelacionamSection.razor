@@ -1,0 +1,46 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("ComoOsConceitosSeRelacionam.Block01"),
+        new WikiDiagramItem("""
+flowchart TD
+    C[Cluster]
+    C --> CP[Control Plane]
+    C --> N[Worker Nodes]
+    C --> NS[Namespaces]
+    NS --> W[Workloads]
+    W --> D[Deployment]
+    W --> SS[StatefulSet]
+    W --> DS[DaemonSet]
+    W --> J[Job]
+    W --> CJ[CronJob]
+    D --> RS[ReplicaSet]
+    RS --> P[Pods]
+    SS --> SP[Stateful Pods]
+    DS --> DP[Daemon Pods]
+    J --> JP[Job Pods]
+    CJ --> J
+    P --> CT[Containers]
+    S[Service] --> P
+    I[Ingress / Gateway] --> S
+    CM[ConfigMap] --> P
+    SEC[Secret] --> P
+    P --> PVC[PVC]
+    PVC --> PV[PV]
+    PV --> SC[StorageClass]
+    HPA[HPA] --> D
+    VPA[VPA] --> P
+    PDB[PDB] --> D
+    SA[ServiceAccount] --> RBAC[RBAC]
+    RBAC --> P
+    NP[NetworkPolicy] --> P
+    SCH[Scheduler] --> N
+    D --> SCH
+""")
+    ];
+}

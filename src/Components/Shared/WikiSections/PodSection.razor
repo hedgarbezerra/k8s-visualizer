@@ -1,0 +1,46 @@
+<WikiSectionFrame Section="@Section">
+    <WikiContentBlock Blocks="@Blocks" />
+</WikiSectionFrame>
+
+@code {
+    [Parameter, EditorRequired] public WikiSectionModel Section { get; set; } = default!;
+    private static readonly WikiBlock[] Blocks =
+    [
+        new WikiParagraphBlock("Pod.Block01"),
+        new WikiParagraphBlock("Pod.ControllerOwnership"),
+        new WikiListItemBlock("Pod.Block02"),
+        new WikiListItemBlock("Pod.Block03"),
+        new WikiListItemBlock("Pod.Block04"),
+        new WikiListItemBlock("Pod.Block05"),
+        new WikiDiagramItem("""
+flowchart TD
+    P[Pod]
+    P --> C1[Container]
+    P --> C2[Container]
+    P --> V[Shared Volume]
+    P --> IP[Pod IP]
+"""),
+        new WikiParagraphBlock("Pod.Block07"),
+        new WikiCodeItem("text", """
+1 Pod = 1 container principal
+"""),
+        new WikiParagraphBlock("Pod.Block09"),
+        new WikiCodeItem("text", """
+Pod
+├── API container
+└── Logging sidecar
+"""),
+        new WikiCodeItem("yaml", """
+apiVersion: v1
+kind: Pod
+metadata:
+  name: standalone
+  labels:
+    app: standalone
+spec:
+  containers:
+    - name: app
+      image: nginx:1.27
+""")
+    ];
+}
