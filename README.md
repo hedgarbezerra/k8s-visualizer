@@ -10,6 +10,7 @@ Dashboard web para explorar recursos vivos de clusters Kubernetes, visualizar su
   - [Visão geral](#visão-geral)
   - [Requisitos e configuração](#requisitos-e-configuração)
   - [Como executar](#como-executar)
+  - [Imagem Docker](#imagem-docker)
   - [Como usar](#como-usar)
   - [Recursos](#recursos)
   - [Arquitetura e serviços](#arquitetura-e-serviços)
@@ -21,6 +22,7 @@ Dashboard web para explorar recursos vivos de clusters Kubernetes, visualizar su
   - [Overview](#overview)
   - [Requirements and configuration](#requirements-and-configuration)
   - [Run the application](#run-the-application)
+  - [Docker image](#docker-image)
   - [How to use](#how-to-use)
   - [Features](#features)
   - [Architecture and services](#architecture-and-services)
@@ -76,7 +78,50 @@ $env:KUBECONFIG_HOST_PATH = "$env:USERPROFILE\.kube\config"
 docker compose -f compose.yaml up --build
 ```
 
-Acesse [http://localhost:5080](http://localhost:5080). O Compose monta o kubeconfig como somente leitura e mantém o banco do app em um volume nomeado. Instruções adicionais estão em [docs/docker.md](docs/docker.md).
+Acesse [http://localhost:5080](http://localhost:5080). O Compose monta o kubeconfig como somente leitura e mantém o banco do app em um volume nomeado.
+
+### Imagem Docker
+
+**Construir localmente**, a partir da raiz do repositório (contexto e Dockerfile em `src/`):
+
+```bash
+docker build -f src/Dockerfile -t kubernetes-visualizer:local ./src
+```
+
+Executar a imagem local com acesso ao kubeconfig:
+
+```bash
+docker run --rm -p 5080:8080 \
+  -e KUBECONFIG=/run/kubeconfig/config \
+  -v "$HOME/.kube/config:/run/kubeconfig/config:ro" \
+  -v visualizer-data:/app/App_Data \
+  kubernetes-visualizer:local
+```
+
+No PowerShell:
+
+```powershell
+docker run --rm -p 5080:8080 `
+  -e KUBECONFIG=/run/kubeconfig/config `
+  -v "${env:USERPROFILE}\.kube\config:/run/kubeconfig/config:ro" `
+  -v visualizer-data:/app/App_Data `
+  kubernetes-visualizer:local
+```
+
+Acesse [http://localhost:5080](http://localhost:5080). O volume nomeado preserva o banco e as chaves de proteção de dados. Em um manifest Kubernetes, use `image: kubernetes-visualizer:local`, monte o kubeconfig em `/run/kubeconfig/config`, configure `KUBECONFIG` com esse caminho e exponha a porta `8080`.
+
+**Imagem publicada pela GitHub Action:** pushes para `main` publicam `ghcr.io/hedgarbezerra/k8s-visualizer:latest`; pushes para outras branches publicam a tag `sha-<hash-curto>`. Tags de release `v*` também publicam a versão. O resumo da action lista tags, commit, digest e comandos de pull/run. Para usar pelo Docker CLI:
+
+```bash
+docker pull ghcr.io/hedgarbezerra/k8s-visualizer:latest
+docker run --rm -p 5080:8080 \
+  -e KUBECONFIG=/run/kubeconfig/config \
+  -v "$HOME/.kube/config:/run/kubeconfig/config:ro" \
+  -v visualizer-data:/app/App_Data \
+  ghcr.io/hedgarbezerra/k8s-visualizer:latest
+```
+
+No YAML, use `image: ghcr.io/hedgarbezerra/k8s-visualizer:latest` ou a tag `sha-<hash-curto>` mostrada na execução da action. Configure `KUBECONFIG` e disponibilize o kubeconfig no contêiner. Dentro de um cluster, prefira conceder acesso via ServiceAccount/RBAC em vez de montar kubeconfig de uma estação de trabalho.
 
 ### Como usar
 
@@ -99,14 +144,15 @@ Acesse [http://localhost:5080](http://localhost:5080). O Compose monta o kubecon
 
 ### Arquitetura e serviços
 
-- `ClusterService` gerencia conexões com o cluster e chamadas à API Kubernetes.
-- `ApplicationEventManager` coordena operações entre a interface e os serviços e centraliza os eventos de atualização.
-- `ConnectionProfileStore` persiste somente perfis de conexão; `ApplicationSettingsStore` persiste configurações e última seleção em SQLite.
-- `ResourceGraphService` carrega snapshots de recursos e constrói relações reutilizáveis para o grafo.
-- `DashboardResourceGraphFilterManager` aplica os filtros do dashboard em estágios ordenados antes de entregar os recursos ao layout.
-- `GraphGroupingSettingsService` persiste labels adicionais; os defaults tipados são carregados por `IOptions<GraphGroupingOptions>`.
-- `Home.razor` organiza os nós e arestas filtrados para o dashboard; a interação de pan do canvas é tratada por `src/wwwroot/app.js`.
-- `Resources.razor` apresenta a lista de recursos e ações suportadas pela API.
+O fluxo principal passa pela interface Blazor Server, pelos serviços de aplicação e pela API Kubernetes. Os componentes interativos rodam no circuito do usuário; os serviços de conexão e grafo são registrados por escopo, enquanto stores SQLite e o pipeline de filtros são compartilhados.
+
+1. `Program.cs` registra serviços, configura cultura (`pt-BR` e `en`), Data Protection e componentes Razor interativos. Na inicialização, os stores SQLite criam suas tabelas.
+2. `MainLayout.razor`, `Settings.razor` e `ClusterSidebarSelector.razor` usam `ApplicationEventManager` para carregar perfis, restaurar a última conexão/namespace, conectar ou desconectar e propagar mudanças de seleção e cultura para a interface.
+3. `ClusterService` lê o kubeconfig e contexto escolhidos, mantém os clientes conectados e consulta a API Kubernetes. Ele concentra descoberta/listagem de recursos e também operações como aplicar YAML, excluir recursos, parar/retomar workloads e ler logs.
+4. `Home.razor` pede um snapshot a `ResourceGraphService`. O serviço obtém os tipos descobertos, carrega recursos em paralelo (até seis tipos por vez), mantém o snapshot em cache e constrói relações a partir de referências, seletores, ownership e labels.
+5. `DashboardResourceGraphFilterManager` aplica etapas ordenadas: identidade e exclusões, tipos disponíveis, construção de relações, sementes por grupo funcional e tipos visíveis, expansão para recursos relacionados e resultado visível. `Home.razor` aplica o layout ao resultado e `src/wwwroot/app.js` trata a navegação no canvas.
+6. `Resources.razor` lista e opera sobre recursos via `ApplicationEventManager`/`ClusterService`; quando necessário, reutiliza o snapshot do `ResourceGraphService` para mostrar relações. Após mutações, a página invalida o cache do grafo.
+7. `ConnectionProfileStore` armazena perfis e `ApplicationSettingsStore` guarda configurações e última seleção em `App_Data/kubernetes-visualizer.db`. `GraphGroupingSettingsService` combina labels padrão de `GraphGroupingOptions` com labels adicionais persistidas.
 
 ### Como o grafo é gerado
 
@@ -191,7 +237,40 @@ $env:KUBECONFIG_HOST_PATH = "$env:USERPROFILE\.kube\config"
 docker compose -f compose.yaml up --build
 ```
 
-Open [http://localhost:5080](http://localhost:5080). Compose mounts the kubeconfig read-only and stores app data in a named volume. See [docs/docker.md](docs/docker.md) for additional instructions.
+Open [http://localhost:5080](http://localhost:5080). Compose mounts the kubeconfig read-only and stores app data in a named volume.
+
+### Docker image
+
+**Build locally** from the repository root (build context and Dockerfile are in `src/`):
+
+```bash
+docker build -f src/Dockerfile -t kubernetes-visualizer:local ./src
+```
+
+Run the local image with access to your kubeconfig:
+
+```bash
+docker run --rm -p 5080:8080 \
+  -e KUBECONFIG=/run/kubeconfig/config \
+  -v "$HOME/.kube/config:/run/kubeconfig/config:ro" \
+  -v visualizer-data:/app/App_Data \
+  kubernetes-visualizer:local
+```
+
+Open [http://localhost:5080](http://localhost:5080). The named volume preserves the database and data-protection keys. A Kubernetes manifest can use `image: kubernetes-visualizer:local`; mount the kubeconfig at `/run/kubeconfig/config`, set `KUBECONFIG` to that path, and expose container port `8080`.
+
+**Image published by the GitHub Action:** pushes to `main` publish `ghcr.io/hedgarbezerra/k8s-visualizer:latest`; pushes to other branches publish `sha-<short-hash>`. `v*` release tags also publish the version. The action summary lists tags, commit, digest, and pull/run commands. To use Docker CLI:
+
+```bash
+docker pull ghcr.io/hedgarbezerra/k8s-visualizer:latest
+docker run --rm -p 5080:8080 \
+  -e KUBECONFIG=/run/kubeconfig/config \
+  -v "$HOME/.kube/config:/run/kubeconfig/config:ro" \
+  -v visualizer-data:/app/App_Data \
+  ghcr.io/hedgarbezerra/k8s-visualizer:latest
+```
+
+In a Kubernetes manifest, use `image: ghcr.io/hedgarbezerra/k8s-visualizer:latest` or the `sha-<short-hash>` tag shown in the action run. Set `KUBECONFIG` and make a kubeconfig available inside the container. In a cluster, prefer granting access through a ServiceAccount/RBAC instead of mounting a workstation kubeconfig.
 
 ### How to use
 
@@ -214,14 +293,15 @@ Open [http://localhost:5080](http://localhost:5080). Compose mounts the kubeconf
 
 ### Architecture and services
 
-- `ClusterService` manages cluster connections and Kubernetes API calls.
-- `ApplicationEventManager` coordinates UI-to-service operations and centralizes update events.
-- `ConnectionProfileStore` persists connection profiles only; `ApplicationSettingsStore` persists settings and the last selection in SQLite.
-- `ResourceGraphService` loads resource snapshots and builds reusable graph relationships.
-- `DashboardResourceGraphFilterManager` applies dashboard filters in ordered stages before handing resources to the layout.
-- `GraphGroupingSettingsService` persists additional labels; typed defaults are loaded through `IOptions<GraphGroupingOptions>`.
-- `Home.razor` arranges the filtered graph nodes and edges; canvas panning is handled by `src/wwwroot/app.js`.
-- `Resources.razor` displays the resource list and API-backed actions.
+The main flow passes through the Blazor Server UI, application services, and the Kubernetes API. Interactive components run in the user's circuit; connection and graph services are scoped, while SQLite stores and the filter pipeline are shared.
+
+1. `Program.cs` registers services, configures culture (`pt-BR` and `en`), Data Protection, and interactive Razor components. On startup, the SQLite stores create their tables.
+2. `MainLayout.razor`, `Settings.razor`, and `ClusterSidebarSelector.razor` use `ApplicationEventManager` to load profiles, restore the last connection/namespace, connect or disconnect, and propagate selection and culture changes to the UI.
+3. `ClusterService` reads the selected kubeconfig and context, maintains connected clients, and queries the Kubernetes API. It handles discovery/resource listing as well as operations such as applying YAML, deleting resources, stopping/resuming workloads, and reading logs.
+4. `Home.razor` requests a snapshot from `ResourceGraphService`. The service loads discovered resource types in parallel (up to six types at a time), caches the snapshot, and builds relationships from references, selectors, ownership, and labels.
+5. `DashboardResourceGraphFilterManager` runs ordered stages for identity and exclusion filters, available kinds, relationship building, functional-group and visible-kind seeds, related-resource expansion, and visible output. `Home.razor` lays out the result; `src/wwwroot/app.js` handles canvas navigation.
+6. `Resources.razor` lists and operates on resources through `ApplicationEventManager`/`ClusterService`; when needed, it reuses the `ResourceGraphService` snapshot to show relationships. After mutations, the page invalidates the graph cache.
+7. `ConnectionProfileStore` stores profiles and `ApplicationSettingsStore` stores settings and the last selection in `App_Data/kubernetes-visualizer.db`. `GraphGroupingSettingsService` combines default labels from `GraphGroupingOptions` with persisted additional labels.
 
 ### How the graph is generated
 

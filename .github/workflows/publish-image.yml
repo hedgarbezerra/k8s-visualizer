@@ -4,12 +4,12 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - master
+      - main
     tags:
       - "v*"
   pull_request:
     branches:
-      - master
+      - main
 
 permissions:
   contents: read
@@ -41,11 +41,12 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
-            type=ref,event=branch
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
             type=ref,event=tag
-            type=sha,format=short,prefix=sha-
+            type=sha,format=short,prefix=sha-,enable=${{ github.ref != 'refs/heads/main' }}
 
       - name: Build and publish
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: ./src
@@ -55,3 +56,47 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Summarize image
+        if: always()
+        env:
+          IMAGE: ghcr.io/${{ github.repository }}
+          TAGS: ${{ steps.meta.outputs.tags }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+          EVENT_NAME: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          SHA: ${{ github.sha }}
+          PUSHED: ${{ github.event_name != 'pull_request' }}
+          BUILD_CONTEXT: ./src
+          DOCKERFILE: ./src/Dockerfile
+        run: |
+          {
+            echo '## Container image'
+            echo
+            echo "- **Image:** `${IMAGE}`"
+            echo "- **Event:** `${EVENT_NAME}`"
+            echo "- **Ref:** `${REF}`"
+            echo "- **Commit:** `${SHA}`"
+            echo "- **Build context:** `${BUILD_CONTEXT}`"
+            echo "- **Dockerfile:** `${DOCKERFILE}`"
+            if [ -n "$DIGEST" ]; then echo "- **Digest:** `${DIGEST}`"; fi
+            if [ "$PUSHED" = 'true' ]; then echo '- **Registry:** published to GitHub Container Registry'; else echo '- **Registry:** pull requests build the image without publishing'; fi
+            echo
+            echo '### Generated tags'
+            if [ -n "$TAGS" ]; then
+              while IFS= read -r tag; do [ -n "$tag" ] && echo "- `${tag}`"; done <<< "$TAGS"
+            else
+              echo '_No registry tags generated for this event._'
+            fi
+            echo
+            echo '### Pull and run'
+            echo '```bash'
+            if [ "$PUSHED" = 'true' ] && [ -n "$TAGS" ]; then
+              first_tag=$(printf '%s\n' "$TAGS" | head -n 1)
+              echo "docker pull $first_tag"
+              echo "docker run --rm -p 5080:8080 -e KUBECONFIG=/run/kubeconfig/config -v \"\$HOME/.kube/config:/run/kubeconfig/config:ro\" -v visualizer-data:/app/App_Data $first_tag"
+            else
+              echo 'This workflow run does not publish an image.'
+            fi
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
