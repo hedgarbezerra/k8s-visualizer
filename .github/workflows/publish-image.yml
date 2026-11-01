@@ -103,13 +103,60 @@ jobs:
             fi
             echo
             echo '### Pull and run'
+            echo 'Public GHCR packages can be pulled anonymously. For a private package, authenticate first with a classic PAT that has read:packages permission (see the optional login commands below).'
+            echo
+            echo '#### Bash / Linux / macOS'
             echo '```bash'
             if [ "$PUSHED" = 'true' ] && [ -n "$TAGS" ]; then
               first_tag=$(printf '%s\n' "$TAGS" | head -n 1)
-              printf -- 'docker pull %s\n' "$first_tag"
-              printf 'docker run --rm -p 5080:8080 -e KUBECONFIG=/run/kubeconfig/config -v "$HOME/.kube/config:/run/kubeconfig/config:ro" -v visualizer-data:/app/App_Data %s\n' "$first_tag"
+              first_tag_repo=${first_tag%:*}
+              first_tag_value=${first_tag##*:}
+              printf 'IMAGE_TAG=%s\n' "$first_tag_value"
+              printf 'IMAGE="%s:$IMAGE_TAG"\n' "$first_tag_repo"
+              echo 'CONTAINER_NAME="k8s-visualizer-$IMAGE_TAG"'
+              echo 'KUBECONFIG_HOST_PATH="$HOME/.kube/config-docker"'
+              echo 'docker pull "$IMAGE"'
+              echo 'docker run -d --name "$CONTAINER_NAME" -p 5080:8080 -e KUBECONFIG=/run/kubeconfig/config --mount "type=bind,source=$KUBECONFIG_HOST_PATH,target=/run/kubeconfig/config,readonly" -v visualizer-data:/app/App_Data "$IMAGE"'
+              echo 'docker logs -f "$CONTAINER_NAME"  # follow logs'
+              echo 'docker stop "$CONTAINER_NAME"     # stop container'
             else
               echo 'This workflow run does not publish an image.'
             fi
             echo '```'
+            if [ "$PUSHED" = 'true' ] && [ -n "$TAGS" ]; then
+              echo
+              echo '#### Windows PowerShell'
+              echo '```powershell'
+              printf "\$imageTag = '%s'\n" "$first_tag_value"
+              printf '$image = "%s:$imageTag"\n' "$first_tag_repo"
+              echo '$containerName = "k8s-visualizer-$imageTag"'
+              echo "\$kubeconfig = Join-Path \$env:USERPROFILE '.kube\\config-docker'"
+              echo 'docker pull $image'
+              echo 'docker run -d --name $containerName -p 5080:8080 `'
+              echo '  -e KUBECONFIG=/run/kubeconfig/config `'
+              echo '  --mount "type=bind,source=$kubeconfig,target=/run/kubeconfig/config,readonly" `'
+              echo '  -v visualizer-data:/app/App_Data `'
+              echo '  $image'
+              echo 'docker logs -f $containerName'
+              echo 'docker stop $containerName'
+              echo '```'
+              echo
+              echo '#### Optional login for a private GHCR package'
+              echo 'Authenticate before running the pull command above. For Bash, use a classic PAT with read:packages:'
+              echo '```bash'
+              echo "read -r -p 'GitHub username: ' GHCR_USER"
+              echo "read -r -s -p 'GHCR token (classic, read:packages): ' GHCR_TOKEN; printf '\\n'"
+              echo 'printf "%s" "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin'
+              echo 'unset GHCR_TOKEN'
+              echo '```'
+              echo 'For PowerShell:'
+              echo '```powershell'
+              echo "\$user = Read-Host 'GitHub username'"
+              echo "\$secureToken = Read-Host 'GHCR token (classic, read:packages)' -AsSecureString"
+              echo "\$token = [System.Net.NetworkCredential]::new('', \$secureToken).Password"
+              echo '$token | docker login ghcr.io -u $user --password-stdin'
+              echo '$token = $null; $secureToken = $null'
+              echo '```'
+              echo 'The kubeconfig path before the colon is on the host; `/run/kubeconfig/config` is the path inside the container. Set that container path in the app connection profile.'
+            fi
           } >> "$GITHUB_STEP_SUMMARY"

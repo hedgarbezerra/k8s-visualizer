@@ -133,29 +133,54 @@ public sealed class ClusterService : IDisposable
             IsLoading = true;
             Error = null;
             Kubernetes? candidateClient = null;
+            var connectionStage = "carregar kubeconfig";
+            var apiServer = "indisponível";
+            _logger.LogInformation(
+                "Iniciando conexão com perfil {ProfileName} ({ProfileId}); kubeconfig {KubeconfigPath}; contexto {ContextName}",
+                profile.Name, profile.Id, profile.KubeconfigPath, profile.ContextName);
             try
             {
                 var kubeConfig = await KubernetesClientConfiguration.LoadKubeConfigAsync(new FileInfo(profile.KubeconfigPath), useRelativePaths: true);
+                connectionStage = "resolver contexto e endpoint";
                 var context = kubeConfig.Contexts.FirstOrDefault(item => item.Name == profile.ContextName)
                     ?? throw new InvalidOperationException(_localizer["ContextNotFound", profile.ContextName]);
                 var cluster = kubeConfig.Clusters.FirstOrDefault(item => item.Name == context.ContextDetails?.Cluster);
+                apiServer = SafeApiServer(cluster?.ClusterEndpoint?.Server);
+                _logger.LogInformation(
+                    "Kubeconfig carregado para perfil {ProfileName}; contexto {ContextName}; cluster {ClusterName}; servidor da API {ApiServer}",
+                    profile.Name, profile.ContextName, context.ContextDetails?.Cluster, apiServer);
+
+                connectionStage = "criar cliente Kubernetes";
                 candidateClient = new Kubernetes(KubernetesClientConfiguration.BuildConfigFromConfigObject(kubeConfig, profile.ContextName));
-                var newState = new ConnectedCluster(profile, candidateClient, cluster?.ClusterEndpoint?.Server ?? "Endpoint indisponível", context.ContextDetails?.Namespace);
+                var newState = new ConnectedCluster(profile, candidateClient, apiServer, context.ContextDetails?.Namespace);
 
                 try
                 {
+                    connectionStage = "consultar namespaces na API Kubernetes";
+                    _logger.LogInformation(
+                        "Consultando namespaces no servidor {ApiServer} para perfil {ProfileName} ({ProfileId})",
+                        apiServer, profile.Name, profile.Id);
                     var namespaces = await candidateClient.CoreV1.ListNamespaceAsync(cancellationToken: cancellationToken);
                     newState.Namespaces = namespaces.Items.Select(item => item.Metadata?.Name)
                         .Where(value => !string.IsNullOrWhiteSpace(value)).Cast<string>()
                         .OrderBy(value => value, StringComparer.OrdinalIgnoreCase).ToArray();
                     if (newState.Namespace is not null && !newState.Namespaces.Contains(newState.Namespace)) newState.Namespace = null;
+                    _logger.LogInformation(
+                        "Conexão com perfil {ProfileName} concluída; API {ApiServer} respondeu e retornou {NamespaceCount} namespaces",
+                        profile.Name, apiServer, newState.Namespaces.Count);
                 }
                 catch (KubernetesException exception) when (exception.Status?.Code == (int)HttpStatusCode.Forbidden)
                 {
+                    _logger.LogInformation(exception,
+                        "A API {ApiServer} respondeu Forbidden ao listar namespaces para o perfil {ProfileName}; a conexão foi mantida sem a lista de namespaces",
+                        apiServer, profile.Name);
                     connectionNotice = _localizer["ConnectedWithoutNamespacePermission"];
                 }
                 catch (k8s.Autorest.HttpOperationException exception) when (exception.Response?.StatusCode == HttpStatusCode.Forbidden)
                 {
+                    _logger.LogInformation(exception,
+                        "A API {ApiServer} respondeu Forbidden ao listar namespaces para o perfil {ProfileName}; a conexão foi mantida sem a lista de namespaces",
+                        apiServer, profile.Name);
                     connectionNotice = _localizer["ConnectedWithoutNamespacePermission"];
                 }
 
@@ -166,7 +191,10 @@ public sealed class ClusterService : IDisposable
             catch (Exception exception)
             {
                 candidateClient?.Dispose();
-                _logger.LogWarning("Falha ao conectar ao perfil {Profile}: {Message}", profileId, exception.Message);
+                _logger.LogWarning(exception,
+                    "Falha ao conectar ao perfil {ProfileName} ({ProfileId}) na etapa {ConnectionStage}; kubeconfig {KubeconfigPath}; contexto {ContextName}; servidor da API {ApiServer}; tipo {ExceptionType}; mensagem {ExceptionMessage}",
+                    profile.Name, profile.Id, connectionStage, profile.KubeconfigPath, profile.ContextName, apiServer,
+                    exception.GetType().FullName, exception.Message);
                 Error = _localizer["ConnectionFailed", exception.Message];
                 IsLoading = false;
                 return;
@@ -182,6 +210,12 @@ public sealed class ClusterService : IDisposable
         Error = connectionNotice;
         _lastSelection = new KubernetesLastSelection(profileId, state.Namespace);
         await _settingsStore.SaveLastSelectionAsync(profileId, state.Namespace, cancellationToken);
+    }
+
+    private static string SafeApiServer(string? server)
+    {
+        if (!Uri.TryCreate(server, UriKind.Absolute, out var uri)) return "Endpoint indisponível";
+        return uri.GetLeftPart(UriPartial.Authority);
     }
 
     public async Task SelectConnectionAsync(string? profileId, CancellationToken cancellationToken = default)

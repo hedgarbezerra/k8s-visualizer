@@ -10,9 +10,10 @@ O caminho do banco é resolvido a partir de `IWebHostEnvironment.ContentRootPath
 
 ## Docker Compose
 
-1. Copie `.env.example` para `.env` e ajuste `KUBECONFIG_HOST_PATH` para o kubeconfig do host.
+1. No PowerShell, defina `KUBECONFIG_HOST_PATH` para o caminho do kubeconfig no host, por exemplo `$env:KUBECONFIG_HOST_PATH = "$env:USERPROFILE\.kube\config"`. No Bash, use `export KUBECONFIG_HOST_PATH="$HOME/.kube/config"`.
 2. Execute `docker compose up --build`.
-3. A aplicação ficará em `http://localhost:5080`; o volume nomeado `visualizer-data` preserva SQLite e chaves de Data Protection quando o container é recriado.
+3. O Compose monta o arquivo do host como `/run/kubeconfig/config` no container e define `KUBECONFIG` com esse caminho. Na página Configurações, use `/run/kubeconfig/config` ao criar o perfil; o caminho do host não existe dentro do container.
+4. A aplicação ficará em `http://localhost:5080`; o volume nomeado `visualizer-data` preserva SQLite e chaves de Data Protection quando o container é recriado.
 
 O volume só é apagado com uma remoção explícita, por exemplo `docker compose down --volumes`. Evite esse comando se quiser manter os perfis cadastrados. Reiniciar ou recriar o container preserva a seleção enquanto o volume nomeado continuar existindo.
 

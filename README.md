@@ -54,6 +54,8 @@ As opções de configuração podem ser fornecidas pelo sistema de configuraçã
 | Caminho do kubeconfig | `KUBECONFIG` | Caminho padrão do kubeconfig quando não informado. |
 | Chaves de proteção de dados | `DataProtection__KeysDirectory` | `App_Data/DataProtection-Keys` sob o diretório de conteúdo do app. |
 
+**Antes de executar pelo Docker:** o kubeconfig original pode apontar a API para `127.0.0.1`, que dentro do container é o próprio container. Use uma cópia chamada `config-docker` e ajuste nela o endpoint para um endereço que o container alcance. A cópia fornecida está configurada como `https://docker:56428`. Preserve o kubeconfig original; os exemplos Docker abaixo montam a cópia e usam o caminho interno do mount nas configurações do app.
+
 ### Como executar
 
 **Localmente**, na raiz do repositório:
@@ -67,58 +69,108 @@ O perfil HTTP de desenvolvimento usa `http://localhost:5080`.
 **Com Docker Compose**, informe o caminho absoluto do kubeconfig do host antes de iniciar:
 
 ```bash
-export KUBECONFIG_HOST_PATH="$HOME/.kube/config"
+export KUBECONFIG_HOST_PATH="$HOME/.kube/config-docker"
 docker compose -f compose.yaml up --build
 ```
 
 No PowerShell:
 
 ```powershell
-$env:KUBECONFIG_HOST_PATH = "$env:USERPROFILE\.kube\config"
+$env:KUBECONFIG_HOST_PATH = Join-Path $env:USERPROFILE '.kube\config-docker'
 docker compose -f compose.yaml up --build
 ```
+
+O Compose monta a cópia indicada por `KUBECONFIG_HOST_PATH` dentro do container em `/home/app/.kube/config`. Na página **Configurações**, use esse caminho interno ao cadastrar o perfil; o caminho do host existe somente na máquina Windows.
 
 Acesse [http://localhost:5080](http://localhost:5080). O Compose monta o kubeconfig como somente leitura e mantém o banco do app em um volume nomeado.
 
 ### Imagem Docker
 
+Os comandos de execução montam `config-docker` em `/run/kubeconfig/config`; use esse caminho no campo **Caminho do kubeconfig** em **Configurações**.
+
 **Construir localmente**, a partir da raiz do repositório (contexto e Dockerfile em `src/`):
 
 ```bash
-docker build -f src/Dockerfile -t kubernetes-visualizer:local ./src
+IMAGE_TAG=local
+IMAGE="kubernetes-visualizer:$IMAGE_TAG"
+docker build -f src/Dockerfile -t "$IMAGE" ./src
 ```
 
 Executar a imagem local com acesso ao kubeconfig:
 
 ```bash
-docker run --rm -p 5080:8080 \
+IMAGE_TAG=local
+IMAGE="kubernetes-visualizer:$IMAGE_TAG"
+CONTAINER_NAME="k8s-visualizer-$IMAGE_TAG"
+KUBECONFIG_HOST_PATH="$(cygpath -m "$HOME/.kube/config-docker")"
+MSYS_NO_PATHCONV=1 docker run -d --name "$CONTAINER_NAME" -p 5080:8080 \
   -e KUBECONFIG=/run/kubeconfig/config \
-  -v "$HOME/.kube/config:/run/kubeconfig/config:ro" \
+  --mount "type=bind,source=$KUBECONFIG_HOST_PATH,target=/run/kubeconfig/config,readonly" \
   -v visualizer-data:/app/App_Data \
-  kubernetes-visualizer:local
+  "$IMAGE"
 ```
 
 No PowerShell:
 
 ```powershell
-docker run --rm -p 5080:8080 `
+$imageTag = 'local'
+$image = "kubernetes-visualizer:$imageTag"
+$containerName = "k8s-visualizer-$imageTag"
+$kubeconfig = Join-Path $env:USERPROFILE '.kube\config-docker'
+docker run -d --name $containerName -p 5080:8080 `
   -e KUBECONFIG=/run/kubeconfig/config `
-  -v "${env:USERPROFILE}\.kube\config:/run/kubeconfig/config:ro" `
+  --mount "type=bind,source=$kubeconfig,target=/run/kubeconfig/config,readonly" `
   -v visualizer-data:/app/App_Data `
-  kubernetes-visualizer:local
+  $image
 ```
+
+O container fica em background. Para ver os logs ou pará-lo, use `docker logs -f $containerName` e `docker stop $containerName` no PowerShell, ou `docker logs -f "$CONTAINER_NAME"` e `docker stop "$CONTAINER_NAME"` no Bash.
+
+**Imagem publicada no GHCR (Git Bash e PowerShell):** a imagem precisa montar o kubeconfig do host. No Git Bash:
+
+```bash
+IMAGE_TAG=sha-0519d89
+IMAGE="ghcr.io/hedgarbezerra/k8s-visualizer:$IMAGE_TAG"
+CONTAINER_NAME="k8s-visualizer-$IMAGE_TAG"
+KUBECONFIG_HOST_PATH="$(cygpath -m "$HOME/.kube/config-docker")"
+MSYS_NO_PATHCONV=1 docker run -d --name "$CONTAINER_NAME" -p 5080:8080 \
+  -e KUBECONFIG=/run/kubeconfig/config \
+  --mount "type=bind,source=$KUBECONFIG_HOST_PATH,target=/run/kubeconfig/config,readonly" \
+  -v visualizer-data:/app/App_Data \
+  "$IMAGE"
+```
+
+No PowerShell, use `--mount` para evitar conflito com os dois-pontos do caminho Windows:
+
+```powershell
+$imageTag = 'latest'
+$image = "ghcr.io/hedgarbezerra/k8s-visualizer:$imageTag"
+$containerName = "k8s-visualizer-$imageTag"
+$kubeconfig = Join-Path $env:USERPROFILE '.kube\config-docker'
+docker run -d --name $containerName -p 5080:8080 `
+  -e KUBECONFIG=/run/kubeconfig/config `
+  --mount "type=bind,source=$kubeconfig,target=/run/kubeconfig/config,readonly" `
+  -v visualizer-data:/app/App_Data `
+  $image
+```
+
+No Git Bash, `$HOME/.kube/config-docker` aponta para a cópia do kubeconfig do usuário atual. Na página **Configurações**, use `/run/kubeconfig/config` no campo **Caminho do kubeconfig** e selecione o contexto desejado. Esse caminho é o local dentro do container, não o caminho do host. A porta `5080` do host é encaminhada para a `8080` do container; abra [http://localhost:5080](http://localhost:5080). O nome do container é composto por `k8s-visualizer-` e o valor de `IMAGE_TAG`. Para testar outra branch, defina `IMAGE_TAG` como a tag `sha-<hash-curto>` mostrada na action. O endpoint da cópia precisa ser resolvível e acessível pelo container; `127.0.0.1` e `localhost` apontam para o próprio container.
 
 Acesse [http://localhost:5080](http://localhost:5080). O volume nomeado preserva o banco e as chaves de proteção de dados. Em um manifest Kubernetes, use `image: kubernetes-visualizer:local`, monte o kubeconfig em `/run/kubeconfig/config`, configure `KUBECONFIG` com esse caminho e exponha a porta `8080`.
 
 **Imagem publicada pela GitHub Action:** pushes para qualquer branch acionam o build. Somente `main` publica a tag `latest`; todos os outros refs publicados, incluindo outras branches e tags de release `v*`, recebem somente a tag `sha-<hash-curto>`. Assim, a versão OCI (`org.opencontainers.image.version`) também é `latest` em `main` e o hash curto nos demais refs. O resumo da action mostra versão, tags, labels, commit, ID, digest e comandos de pull/run. Para usar pelo Docker CLI:
 
 ```bash
-docker pull ghcr.io/hedgarbezerra/k8s-visualizer:latest
-docker run --rm -p 5080:8080 \
+IMAGE_TAG=latest
+IMAGE="ghcr.io/hedgarbezerra/k8s-visualizer:$IMAGE_TAG"
+CONTAINER_NAME="k8s-visualizer-$IMAGE_TAG"
+KUBECONFIG_HOST_PATH="$HOME/.kube/config-docker"
+docker pull "$IMAGE"
+docker run -d --name "$CONTAINER_NAME" -p 5080:8080 \
   -e KUBECONFIG=/run/kubeconfig/config \
-  -v "$HOME/.kube/config:/run/kubeconfig/config:ro" \
+  -v "$KUBECONFIG_HOST_PATH:/run/kubeconfig/config:ro" \
   -v visualizer-data:/app/App_Data \
-  ghcr.io/hedgarbezerra/k8s-visualizer:latest
+  "$IMAGE"
 ```
 
 No YAML, use `image: ghcr.io/hedgarbezerra/k8s-visualizer:latest` ou a tag `sha-<hash-curto>` mostrada na execução da action. Configure `KUBECONFIG` e disponibilize o kubeconfig no contêiner. Dentro de um cluster, prefira conceder acesso via ServiceAccount/RBAC em vez de montar kubeconfig de uma estação de trabalho.
@@ -126,13 +178,16 @@ No YAML, use `image: ghcr.io/hedgarbezerra/k8s-visualizer:latest` ou a tag `sha-
 **Autenticação no GHCR:** imagens públicas podem ser baixadas anonimamente. Se o pacote estiver privado, faça login antes do `docker pull` usando um Personal Access Token (classic) com escopo `read:packages`:
 
 ```bash
-IMAGE=ghcr.io/hedgarbezerra/k8s-visualizer:latest
+IMAGE_TAG=latest
+IMAGE="ghcr.io/hedgarbezerra/k8s-visualizer:$IMAGE_TAG"
+CONTAINER_NAME="k8s-visualizer-$IMAGE_TAG"
+KUBECONFIG_HOST_PATH="$HOME/.kube/config-docker"
 read -r -p 'Usuário do GitHub: ' GHCR_USER
 read -r -s -p 'Token GHCR (classic, read:packages): ' GHCR_TOKEN; printf '\n'
 printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin \
   && docker pull "$IMAGE" \
-  && docker run --rm -p 5080:8080 -e KUBECONFIG=/run/kubeconfig/config \
-       -v "$HOME/.kube/config:/run/kubeconfig/config:ro" \
+  && docker run -d --name "$CONTAINER_NAME" -p 5080:8080 -e KUBECONFIG=/run/kubeconfig/config \
+       -v "$KUBECONFIG_HOST_PATH:/run/kubeconfig/config:ro" \
        -v visualizer-data:/app/App_Data "$IMAGE"
 unset GHCR_TOKEN
 ```
@@ -140,7 +195,10 @@ unset GHCR_TOKEN
 O token é solicitado sem exibir os caracteres e não é passado ao container; o Docker o usa apenas para autenticar e baixar a imagem. Troque `latest` por `sha-<hash-curto>` para testar outra branch. No PowerShell:
 
 ```powershell
-$image = 'ghcr.io/hedgarbezerra/k8s-visualizer:latest'
+$imageTag = 'latest'
+$image = "ghcr.io/hedgarbezerra/k8s-visualizer:$imageTag"
+$containerName = "k8s-visualizer-$imageTag"
+$kubeconfig = Join-Path $env:USERPROFILE '.kube\config-docker'
 $user = Read-Host 'Usuário do GitHub'
 $secureToken = Read-Host 'Token GHCR (classic, read:packages)' -AsSecureString
 $token = [System.Net.NetworkCredential]::new('', $secureToken).Password
@@ -148,8 +206,8 @@ $token | docker login ghcr.io -u $user --password-stdin
 if ($LASTEXITCODE -eq 0) {
   docker pull $image
   if ($LASTEXITCODE -eq 0) {
-    docker run --rm -p 5080:8080 -e KUBECONFIG=/run/kubeconfig/config `
-      -v "${env:USERPROFILE}\.kube\config:/run/kubeconfig/config:ro" `
+    docker run -d --name $containerName -p 5080:8080 -e KUBECONFIG=/run/kubeconfig/config `
+      --mount "type=bind,source=$kubeconfig,target=/run/kubeconfig/config,readonly" `
       -v visualizer-data:/app/App_Data $image
   }
 }
@@ -242,6 +300,8 @@ Kubernetes Visualizer helps you understand a cluster's current state through a v
 
 By default, the app looks for the kubeconfig path specified by `KUBECONFIG` or the Kubernetes client's default location. In **Settings**, add a profile with the kubeconfig path and context. Profiles, the last connection, and operational preferences are stored in SQLite, by default at `src/App_Data/kubernetes-visualizer.db` during a local run.
 
+**Before running with Docker:** the original kubeconfig may point the API to `127.0.0.1`, which refers to the container itself from inside Docker. Use a copy named `config-docker` and set its API endpoint to an address reachable from the container. The supplied copy is configured as `https://docker:56428`. Keep the original kubeconfig unchanged; the Docker examples below mount the copy and use its container-side mount path in the app settings.
+
 Configuration can be supplied through ASP.NET Core configuration:
 
 | Setting | Environment variable | Default / purpose |
@@ -262,16 +322,18 @@ The development HTTP profile uses `http://localhost:5080`.
 **With Docker Compose**, set the absolute path to the host kubeconfig before starting:
 
 ```bash
-export KUBECONFIG_HOST_PATH="$HOME/.kube/config"
+export KUBECONFIG_HOST_PATH="$HOME/.kube/config-docker"
 docker compose -f compose.yaml up --build
 ```
 
 In PowerShell:
 
 ```powershell
-$env:KUBECONFIG_HOST_PATH = "$env:USERPROFILE\.kube\config"
+$env:KUBECONFIG_HOST_PATH = "$env:USERPROFILE\.kube\config-docker"
 docker compose -f compose.yaml up --build
 ```
+
+Compose mounts the file selected by `KUBECONFIG_HOST_PATH` inside the container at `/home/app/.kube/config`. In **Settings**, use that container path when creating the profile; the host path exists only on Windows.
 
 Open [http://localhost:5080](http://localhost:5080). Compose mounts the kubeconfig read-only and stores app data in a named volume.
 
@@ -280,17 +342,23 @@ Open [http://localhost:5080](http://localhost:5080). Compose mounts the kubeconf
 **Build locally** from the repository root (build context and Dockerfile are in `src/`):
 
 ```bash
-docker build -f src/Dockerfile -t kubernetes-visualizer:local ./src
+IMAGE_TAG=local
+IMAGE="kubernetes-visualizer:$IMAGE_TAG"
+docker build -f src/Dockerfile -t "$IMAGE" ./src
 ```
 
 Run the local image with access to your kubeconfig:
 
 ```bash
-docker run --rm -p 5080:8080 \
+IMAGE_TAG=local
+IMAGE="kubernetes-visualizer:$IMAGE_TAG"
+CONTAINER_NAME="k8s-visualizer-$IMAGE_TAG"
+KUBECONFIG_HOST_PATH="$HOME/.kube/config-docker"
+docker run -d --name "$CONTAINER_NAME" -p 5080:8080 \
   -e KUBECONFIG=/run/kubeconfig/config \
-  -v "$HOME/.kube/config:/run/kubeconfig/config:ro" \
+  -v "$KUBECONFIG_HOST_PATH:/run/kubeconfig/config:ro" \
   -v visualizer-data:/app/App_Data \
-  kubernetes-visualizer:local
+  "$IMAGE"
 ```
 
 Open [http://localhost:5080](http://localhost:5080). The named volume preserves the database and data-protection keys. A Kubernetes manifest can use `image: kubernetes-visualizer:local`; mount the kubeconfig at `/run/kubeconfig/config`, set `KUBECONFIG` to that path, and expose container port `8080`.
@@ -298,26 +366,65 @@ Open [http://localhost:5080](http://localhost:5080). The named volume preserves 
 **Image published by the GitHub Action:** pushes to every branch trigger a build. Only `main` publishes the `latest` tag; every other published ref, including other branches and `v*` release tags, receives only the `sha-<short-hash>` tag. Therefore, the OCI version (`org.opencontainers.image.version`) is `latest` on `main` and the short hash for all other refs. The action summary shows the version, tags, labels, commit, image ID, digest, and pull/run commands. To use Docker CLI:
 
 ```bash
-docker pull ghcr.io/hedgarbezerra/k8s-visualizer:latest
-docker run --rm -p 5080:8080 \
+IMAGE_TAG=latest
+IMAGE="ghcr.io/hedgarbezerra/k8s-visualizer:$IMAGE_TAG"
+CONTAINER_NAME="k8s-visualizer-$IMAGE_TAG"
+KUBECONFIG_HOST_PATH="$HOME/.kube/config-docker"
+docker pull "$IMAGE"
+docker run -d --name "$CONTAINER_NAME" -p 5080:8080 \
   -e KUBECONFIG=/run/kubeconfig/config \
-  -v "$HOME/.kube/config:/run/kubeconfig/config:ro" \
+  -v "$KUBECONFIG_HOST_PATH:/run/kubeconfig/config:ro" \
   -v visualizer-data:/app/App_Data \
-  ghcr.io/hedgarbezerra/k8s-visualizer:latest
+  "$IMAGE"
 ```
+
+**GHCR image (Git Bash and PowerShell):** the image needs the `config-docker` copy mounted into the container. In Git Bash on Windows:
+
+```bash
+IMAGE_TAG=sha-0519d89
+IMAGE="ghcr.io/hedgarbezerra/k8s-visualizer:$IMAGE_TAG"
+CONTAINER_NAME="k8s-visualizer-$IMAGE_TAG"
+KUBECONFIG_HOST_PATH="$(cygpath -m "$HOME/.kube/config-docker")"
+MSYS_NO_PATHCONV=1 docker run -d --name "$CONTAINER_NAME" -p 5080:8080 \
+  -e KUBECONFIG=/run/kubeconfig/config \
+  --mount "type=bind,source=$KUBECONFIG_HOST_PATH,target=/run/kubeconfig/config,readonly" \
+  -v visualizer-data:/app/App_Data \
+  "$IMAGE"
+```
+
+In PowerShell, use `--mount` to avoid conflicts with colons in Windows paths:
+
+```powershell
+$imageTag = 'latest'
+$image = "ghcr.io/hedgarbezerra/k8s-visualizer:$imageTag"
+$containerName = "k8s-visualizer-$imageTag"
+$kubeconfig = Join-Path $env:USERPROFILE '.kube\config-docker'
+docker run -d --name $containerName -p 5080:8080 `
+  -e KUBECONFIG=/run/kubeconfig/config `
+  --mount "type=bind,source=$kubeconfig,target=/run/kubeconfig/config,readonly" `
+  -v visualizer-data:/app/App_Data `
+  $image
+```
+
+The container runs in the background. Use `docker logs -f $containerName` and `docker stop $containerName` in PowerShell, or `docker logs -f "$CONTAINER_NAME"` and `docker stop "$CONTAINER_NAME"` in Bash to inspect or stop it.
+
+In Git Bash, `$HOME/.kube/config-docker` points to the current user's kubeconfig copy. In **Settings**, use `/run/kubeconfig/config` as the **Kubeconfig path** and select the desired context. This is the path inside the container, not the host path. Port `5080` on the host is forwarded to port `8080` in the container; open [http://localhost:5080](http://localhost:5080). The container name combines `k8s-visualizer-` with `IMAGE_TAG`. To test another branch, set `IMAGE_TAG` to its `sha-<short-hash>` tag from the action. The copied kubeconfig endpoint must resolve and be reachable from the container; `127.0.0.1` and `localhost` refer to the container itself.
 
 In a Kubernetes manifest, use `image: ghcr.io/hedgarbezerra/k8s-visualizer:latest` or the `sha-<short-hash>` tag shown in the action run. Set `KUBECONFIG` and make a kubeconfig available inside the container. In a cluster, prefer granting access through a ServiceAccount/RBAC instead of mounting a workstation kubeconfig.
 
 **GHCR authentication:** public images can be pulled anonymously. If the package is private, log in before `docker pull` with a classic Personal Access Token that has the `read:packages` scope:
 
 ```bash
-IMAGE=ghcr.io/hedgarbezerra/k8s-visualizer:latest
+IMAGE_TAG=latest
+IMAGE="ghcr.io/hedgarbezerra/k8s-visualizer:$IMAGE_TAG"
+CONTAINER_NAME="k8s-visualizer-$IMAGE_TAG"
+KUBECONFIG_HOST_PATH="$HOME/.kube/config-docker"
 read -r -p 'GitHub username: ' GHCR_USER
 read -r -s -p 'GHCR token (classic, read:packages): ' GHCR_TOKEN; printf '\n'
 printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin \
   && docker pull "$IMAGE" \
-  && docker run --rm -p 5080:8080 -e KUBECONFIG=/run/kubeconfig/config \
-       -v "$HOME/.kube/config:/run/kubeconfig/config:ro" \
+  && docker run -d --name "$CONTAINER_NAME" -p 5080:8080 -e KUBECONFIG=/run/kubeconfig/config \
+       -v "$KUBECONFIG_HOST_PATH:/run/kubeconfig/config:ro" \
        -v visualizer-data:/app/App_Data "$IMAGE"
 unset GHCR_TOKEN
 ```
@@ -325,7 +432,10 @@ unset GHCR_TOKEN
 The token is entered without displaying its characters and is not passed into the container; Docker uses it only to authenticate and pull the image. Change `latest` to `sha-<short-hash>` to test another branch. In PowerShell:
 
 ```powershell
-$image = 'ghcr.io/hedgarbezerra/k8s-visualizer:latest'
+$imageTag = 'latest'
+$image = "ghcr.io/hedgarbezerra/k8s-visualizer:$imageTag"
+$containerName = "k8s-visualizer-$imageTag"
+$kubeconfig = Join-Path $env:USERPROFILE '.kube\config-docker'
 $user = Read-Host 'GitHub username'
 $secureToken = Read-Host 'GHCR token (classic, read:packages)' -AsSecureString
 $token = [System.Net.NetworkCredential]::new('', $secureToken).Password
@@ -333,8 +443,8 @@ $token | docker login ghcr.io -u $user --password-stdin
 if ($LASTEXITCODE -eq 0) {
   docker pull $image
   if ($LASTEXITCODE -eq 0) {
-    docker run --rm -p 5080:8080 -e KUBECONFIG=/run/kubeconfig/config `
-      -v "${env:USERPROFILE}\.kube\config:/run/kubeconfig/config:ro" `
+    docker run -d --name $containerName -p 5080:8080 -e KUBECONFIG=/run/kubeconfig/config `
+      --mount "type=bind,source=$kubeconfig,target=/run/kubeconfig/config,readonly" `
       -v visualizer-data:/app/App_Data $image
   }
 }

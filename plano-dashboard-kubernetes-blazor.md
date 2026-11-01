@@ -6,7 +6,7 @@
 
 ### Projeto de referência
 
-[Certeza] Usar `C:\Users\hedga\RiderProjects\aws-localstack-visualizer\AwsLocalStackVisualizer\AwsLocalStackVisualizer.csproj` e seus arquivos como referência de organização e experiência de uso. [Certeza] O projeto usa ASP.NET Core Web SDK, `net9.0`, nullable e implicit usings; hospeda componentes Razor com `InteractiveServer`, registra serviços via DI, separa interfaces/serviços/modelos, configura health checks, tratamento global de erros e Serilog, e usa Bootstrap. [Provável] Reaproveitar esses padrões onde couber; não copiar dependências AWS/LocalStack nem adotar automaticamente o target framework ou os detalhes específicos de AWS.
+[Certeza] Usar o projeto de visualização AWS/LocalStack e seu arquivo `AwsLocalStackVisualizer.csproj` como referência de organização e experiência de uso. [Certeza] O projeto usa ASP.NET Core Web SDK, `net9.0`, nullable e implicit usings; hospeda componentes Razor com `InteractiveServer`, registra serviços via DI, separa interfaces/serviços/modelos, configura health checks, tratamento global de erros e Serilog, e usa Bootstrap. [Provável] Reaproveitar esses padrões onde couber; não copiar dependências AWS/LocalStack nem adotar automaticamente o target framework ou os detalhes específicos de AWS.
 
 > [Provável] Este plano agora assume uma ferramenta de laboratório local, sem login, para operar um cluster de desenvolvimento descartável. Essa escolha tira autenticação de usuário do escopo, mas não torna segura uma conexão acidental com um cluster compartilhado ou de produção; por isso, o perfil local precisa restringir endpoint/contexto e tornar operações destrutivas visíveis.
 
