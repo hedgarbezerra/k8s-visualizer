@@ -42,7 +42,6 @@ jobs:
           images: ghcr.io/${{ github.repository }}
           tags: |
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-            type=ref,event=tag
             type=sha,format=short,prefix=sha-,enable=${{ github.ref != 'refs/heads/main' }}
 
       - name: Build and publish

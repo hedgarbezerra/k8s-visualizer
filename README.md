@@ -110,7 +110,7 @@ docker run --rm -p 5080:8080 `
 
 Acesse [http://localhost:5080](http://localhost:5080). O volume nomeado preserva o banco e as chaves de proteção de dados. Em um manifest Kubernetes, use `image: kubernetes-visualizer:local`, monte o kubeconfig em `/run/kubeconfig/config`, configure `KUBECONFIG` com esse caminho e exponha a porta `8080`.
 
-**Imagem publicada pela GitHub Action:** pushes para qualquer branch acionam o build. `main` publica `ghcr.io/hedgarbezerra/k8s-visualizer:latest`; cada outra branch publica uma tag `sha-<hash-curto>` para permitir testar aquele commit. Tags de release `v*` também publicam a versão. O resumo da action mostra a versão OCI (`org.opencontainers.image.version`), tags, labels, commit, ID, digest e comandos de pull/run. Para usar pelo Docker CLI:
+**Imagem publicada pela GitHub Action:** pushes para qualquer branch acionam o build. Somente `main` publica a tag `latest`; todos os outros refs publicados, incluindo outras branches e tags de release `v*`, recebem somente a tag `sha-<hash-curto>`. Assim, a versão OCI (`org.opencontainers.image.version`) também é `latest` em `main` e o hash curto nos demais refs. O resumo da action mostra versão, tags, labels, commit, ID, digest e comandos de pull/run. Para usar pelo Docker CLI:
 
 ```bash
 docker pull ghcr.io/hedgarbezerra/k8s-visualizer:latest
@@ -295,7 +295,7 @@ docker run --rm -p 5080:8080 \
 
 Open [http://localhost:5080](http://localhost:5080). The named volume preserves the database and data-protection keys. A Kubernetes manifest can use `image: kubernetes-visualizer:local`; mount the kubeconfig at `/run/kubeconfig/config`, set `KUBECONFIG` to that path, and expose container port `8080`.
 
-**Image published by the GitHub Action:** pushes to every branch trigger a build. `main` publishes `ghcr.io/hedgarbezerra/k8s-visualizer:latest`; every other branch publishes a `sha-<short-hash>` tag so that commit can be tested. `v*` release tags also publish the version. The action summary shows the OCI version (`org.opencontainers.image.version`), tags, labels, commit, image ID, digest, and pull/run commands. To use Docker CLI:
+**Image published by the GitHub Action:** pushes to every branch trigger a build. Only `main` publishes the `latest` tag; every other published ref, including other branches and `v*` release tags, receives only the `sha-<short-hash>` tag. Therefore, the OCI version (`org.opencontainers.image.version`) is `latest` on `main` and the short hash for all other refs. The action summary shows the version, tags, labels, commit, image ID, digest, and pull/run commands. To use Docker CLI:
 
 ```bash
 docker pull ghcr.io/hedgarbezerra/k8s-visualizer:latest
