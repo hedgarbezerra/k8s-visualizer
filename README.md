@@ -110,7 +110,7 @@ docker run --rm -p 5080:8080 `
 
 Acesse [http://localhost:5080](http://localhost:5080). O volume nomeado preserva o banco e as chaves de proteção de dados. Em um manifest Kubernetes, use `image: kubernetes-visualizer:local`, monte o kubeconfig em `/run/kubeconfig/config`, configure `KUBECONFIG` com esse caminho e exponha a porta `8080`.
 
-**Imagem publicada pela GitHub Action:** pushes para `main` publicam `ghcr.io/hedgarbezerra/k8s-visualizer:latest`; pushes para outras branches publicam a tag `sha-<hash-curto>`. Tags de release `v*` também publicam a versão. O resumo da action lista tags, commit, digest e comandos de pull/run. Para usar pelo Docker CLI:
+**Imagem publicada pela GitHub Action:** pushes para qualquer branch acionam o build. `main` publica `ghcr.io/hedgarbezerra/k8s-visualizer:latest`; cada outra branch publica uma tag `sha-<hash-curto>` para permitir testar aquele commit. Tags de release `v*` também publicam a versão. O resumo da action mostra a versão OCI (`org.opencontainers.image.version`), tags, labels, commit, ID, digest e comandos de pull/run. Para usar pelo Docker CLI:
 
 ```bash
 docker pull ghcr.io/hedgarbezerra/k8s-visualizer:latest
@@ -122,6 +122,42 @@ docker run --rm -p 5080:8080 \
 ```
 
 No YAML, use `image: ghcr.io/hedgarbezerra/k8s-visualizer:latest` ou a tag `sha-<hash-curto>` mostrada na execução da action. Configure `KUBECONFIG` e disponibilize o kubeconfig no contêiner. Dentro de um cluster, prefira conceder acesso via ServiceAccount/RBAC em vez de montar kubeconfig de uma estação de trabalho.
+
+**Autenticação no GHCR:** imagens públicas podem ser baixadas anonimamente. Se o pacote estiver privado, faça login antes do `docker pull` usando um Personal Access Token (classic) com escopo `read:packages`:
+
+```bash
+IMAGE=ghcr.io/hedgarbezerra/k8s-visualizer:latest
+read -r -p 'Usuário do GitHub: ' GHCR_USER
+read -r -s -p 'Token GHCR (classic, read:packages): ' GHCR_TOKEN; printf '\n'
+printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin \
+  && docker pull "$IMAGE" \
+  && docker run --rm -p 5080:8080 -e KUBECONFIG=/run/kubeconfig/config \
+       -v "$HOME/.kube/config:/run/kubeconfig/config:ro" \
+       -v visualizer-data:/app/App_Data "$IMAGE"
+unset GHCR_TOKEN
+```
+
+O token é solicitado sem exibir os caracteres e não é passado ao container; o Docker o usa apenas para autenticar e baixar a imagem. Troque `latest` por `sha-<hash-curto>` para testar outra branch. No PowerShell:
+
+```powershell
+$image = 'ghcr.io/hedgarbezerra/k8s-visualizer:latest'
+$user = Read-Host 'Usuário do GitHub'
+$secureToken = Read-Host 'Token GHCR (classic, read:packages)' -AsSecureString
+$token = [System.Net.NetworkCredential]::new('', $secureToken).Password
+$token | docker login ghcr.io -u $user --password-stdin
+if ($LASTEXITCODE -eq 0) {
+  docker pull $image
+  if ($LASTEXITCODE -eq 0) {
+    docker run --rm -p 5080:8080 -e KUBECONFIG=/run/kubeconfig/config `
+      -v "${env:USERPROFILE}\.kube\config:/run/kubeconfig/config:ro" `
+      -v visualizer-data:/app/App_Data $image
+  }
+}
+$token = $null
+$secureToken = $null
+```
+
+Para um pacote privado consumido por Kubernetes, crie um `imagePullSecret` com essas credenciais e referencie-o em `spec.imagePullSecrets`.
 
 ### Como usar
 
@@ -259,7 +295,7 @@ docker run --rm -p 5080:8080 \
 
 Open [http://localhost:5080](http://localhost:5080). The named volume preserves the database and data-protection keys. A Kubernetes manifest can use `image: kubernetes-visualizer:local`; mount the kubeconfig at `/run/kubeconfig/config`, set `KUBECONFIG` to that path, and expose container port `8080`.
 
-**Image published by the GitHub Action:** pushes to `main` publish `ghcr.io/hedgarbezerra/k8s-visualizer:latest`; pushes to other branches publish `sha-<short-hash>`. `v*` release tags also publish the version. The action summary lists tags, commit, digest, and pull/run commands. To use Docker CLI:
+**Image published by the GitHub Action:** pushes to every branch trigger a build. `main` publishes `ghcr.io/hedgarbezerra/k8s-visualizer:latest`; every other branch publishes a `sha-<short-hash>` tag so that commit can be tested. `v*` release tags also publish the version. The action summary shows the OCI version (`org.opencontainers.image.version`), tags, labels, commit, image ID, digest, and pull/run commands. To use Docker CLI:
 
 ```bash
 docker pull ghcr.io/hedgarbezerra/k8s-visualizer:latest
@@ -271,6 +307,42 @@ docker run --rm -p 5080:8080 \
 ```
 
 In a Kubernetes manifest, use `image: ghcr.io/hedgarbezerra/k8s-visualizer:latest` or the `sha-<short-hash>` tag shown in the action run. Set `KUBECONFIG` and make a kubeconfig available inside the container. In a cluster, prefer granting access through a ServiceAccount/RBAC instead of mounting a workstation kubeconfig.
+
+**GHCR authentication:** public images can be pulled anonymously. If the package is private, log in before `docker pull` with a classic Personal Access Token that has the `read:packages` scope:
+
+```bash
+IMAGE=ghcr.io/hedgarbezerra/k8s-visualizer:latest
+read -r -p 'GitHub username: ' GHCR_USER
+read -r -s -p 'GHCR token (classic, read:packages): ' GHCR_TOKEN; printf '\n'
+printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin \
+  && docker pull "$IMAGE" \
+  && docker run --rm -p 5080:8080 -e KUBECONFIG=/run/kubeconfig/config \
+       -v "$HOME/.kube/config:/run/kubeconfig/config:ro" \
+       -v visualizer-data:/app/App_Data "$IMAGE"
+unset GHCR_TOKEN
+```
+
+The token is entered without displaying its characters and is not passed into the container; Docker uses it only to authenticate and pull the image. Change `latest` to `sha-<short-hash>` to test another branch. In PowerShell:
+
+```powershell
+$image = 'ghcr.io/hedgarbezerra/k8s-visualizer:latest'
+$user = Read-Host 'GitHub username'
+$secureToken = Read-Host 'GHCR token (classic, read:packages)' -AsSecureString
+$token = [System.Net.NetworkCredential]::new('', $secureToken).Password
+$token | docker login ghcr.io -u $user --password-stdin
+if ($LASTEXITCODE -eq 0) {
+  docker pull $image
+  if ($LASTEXITCODE -eq 0) {
+    docker run --rm -p 5080:8080 -e KUBECONFIG=/run/kubeconfig/config `
+      -v "${env:USERPROFILE}\.kube\config:/run/kubeconfig/config:ro" `
+      -v visualizer-data:/app/App_Data $image
+  }
+}
+$token = $null
+$secureToken = $null
+```
+
+For a private package consumed by Kubernetes, create an `imagePullSecret` with those credentials and reference it from `spec.imagePullSecrets`.
 
 ### How to use
 

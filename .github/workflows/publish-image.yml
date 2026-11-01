@@ -4,12 +4,12 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - main
+      - '**'
     tags:
       - "v*"
   pull_request:
     branches:
-      - main
+      - '**'
 
 permissions:
   contents: read
@@ -63,6 +63,10 @@ jobs:
           IMAGE: ghcr.io/${{ github.repository }}
           TAGS: ${{ steps.meta.outputs.tags }}
           DIGEST: ${{ steps.build.outputs.digest }}
+          IMAGE_ID: ${{ steps.build.outputs.imageid }}
+          VERSION: ${{ steps.meta.outputs.version }}
+          LABELS: ${{ steps.meta.outputs.labels }}
+          BUILD_STATUS: ${{ steps.build.outcome }}
           EVENT_NAME: ${{ github.event_name }}
           REF: ${{ github.ref }}
           SHA: ${{ github.sha }}
@@ -73,28 +77,38 @@ jobs:
           {
             echo '## Container image'
             echo
-            echo "- **Image:** `${IMAGE}`"
-            echo "- **Event:** `${EVENT_NAME}`"
-            echo "- **Ref:** `${REF}`"
-            echo "- **Commit:** `${SHA}`"
-            echo "- **Build context:** `${BUILD_CONTEXT}`"
-            echo "- **Dockerfile:** `${DOCKERFILE}`"
-            if [ -n "$DIGEST" ]; then echo "- **Digest:** `${DIGEST}`"; fi
+            printf -- '- **Image:** `%s`\n' "$IMAGE"
+            printf -- '- **Version:** `%s`\n' "$VERSION"
+            printf -- '- **Event:** `%s`\n' "$EVENT_NAME"
+            printf -- '- **Ref:** `%s`\n' "$REF"
+            printf -- '- **Commit:** `%s`\n' "$SHA"
+            printf -- '- **Build context:** `%s`\n' "$BUILD_CONTEXT"
+            printf -- '- **Dockerfile:** `%s`\n' "$DOCKERFILE"
+            printf -- '- **Build status:** `%s`\n' "$BUILD_STATUS"
+            if [ -n "$IMAGE_ID" ]; then printf -- '- **Image ID:** `%s`\n' "$IMAGE_ID"; fi
+            if [ -n "$DIGEST" ]; then printf -- '- **Digest:** `%s`\n' "$DIGEST"; fi
             if [ "$PUSHED" = 'true' ]; then echo '- **Registry:** published to GitHub Container Registry'; else echo '- **Registry:** pull requests build the image without publishing'; fi
             echo
             echo '### Generated tags'
             if [ -n "$TAGS" ]; then
-              while IFS= read -r tag; do [ -n "$tag" ] && echo "- `${tag}`"; done <<< "$TAGS"
+              while IFS= read -r tag; do [ -n "$tag" ] && printf -- '- `%s`\n' "$tag"; done <<< "$TAGS"
             else
               echo '_No registry tags generated for this event._'
+            fi
+            echo
+            echo '### OCI labels'
+            if [ -n "$LABELS" ]; then
+              while IFS= read -r label; do [ -n "$label" ] && printf -- '- `%s`\n' "$label"; done <<< "$LABELS"
+            else
+              echo '_No OCI labels were generated._'
             fi
             echo
             echo '### Pull and run'
             echo '```bash'
             if [ "$PUSHED" = 'true' ] && [ -n "$TAGS" ]; then
               first_tag=$(printf '%s\n' "$TAGS" | head -n 1)
-              echo "docker pull $first_tag"
-              echo "docker run --rm -p 5080:8080 -e KUBECONFIG=/run/kubeconfig/config -v \"\$HOME/.kube/config:/run/kubeconfig/config:ro\" -v visualizer-data:/app/App_Data $first_tag"
+              printf -- 'docker pull %s\n' "$first_tag"
+              printf 'docker run --rm -p 5080:8080 -e KUBECONFIG=/run/kubeconfig/config -v "$HOME/.kube/config:/run/kubeconfig/config:ro" -v visualizer-data:/app/App_Data %s\n' "$first_tag"
             else
               echo 'This workflow run does not publish an image.'
             fi
